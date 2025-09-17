@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const token = process.env.TOKEN;
+const token = process.env.TOKEN_LINE;
 const BASE_URL = process.env.BASE_URL_SP;
 
 const axiosInstance = axios.create({
