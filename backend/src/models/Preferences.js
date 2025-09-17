@@ -1,3 +1,4 @@
+import { DataTypes } from "sequelize";
 import sequelize from "../database/client.js";
 
 const Preferences = sequelize.define("Preferences", {
@@ -32,3 +33,14 @@ const Preferences = sequelize.define("Preferences", {
         }
     }
 });
+
+Preferences.updateHome = async (userId, homeName, distance, time) => {
+    const preferences = await Preferences.findOne({ where: { userId } });
+    if (!preferences) {
+        throw new Error("Preferences not found for the user.");
+    }
+    preferences.home = `${homeName} - ${distance}m, ${time}min`;
+    await preferences.save();
+};
+
+export default Preferences;

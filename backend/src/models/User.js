@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../database/client.js";
+import Preferences from "./Preferences.js"; 
 
 const User = sequelize.define("User", {
     id: {
@@ -31,6 +32,13 @@ const User = sequelize.define("User", {
 }, {
     tableName: "users",
     timestamps: false
+});
+
+User.hasOne(Preferences, {
+    foreignKey: "userId",
+    as: "preferences",
+    onUpdate: "CASCADE",
+    onDelete: "CASCADE",
 });
 
 export default User;
