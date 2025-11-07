@@ -5,6 +5,7 @@ import Directions from './pages/Directions.jsx'
 import UserProfile from './pages/UserProfile.jsx'
 import Lines from './pages/Lines.jsx'
 import Stations from './pages/Stations.jsx'
+import Search from './pages/Search.jsx'
 import './App.css'
 
 const isAuthenticated = () => {
@@ -31,6 +32,7 @@ function App() {
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/lines" element={<Lines />} />
         <Route path="/stations" element={<Stations />} />
+        <Route path="/search" element={<Search />} />
       </Routes>
     </>
   )
