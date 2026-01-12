@@ -51,7 +51,4 @@ Interface web em React que consome a API do backend e entrega a experiência ao 
 - `npm run preview` — preview do build
 
 📖 **[Documentação completa do Frontend →](./frontend/README.md)**
-
----
-
 📖 **[Documentação completa do Backend →](./backend/README.md)**
