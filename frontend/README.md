@@ -1,33 +1,33 @@
-# Bus App – Frontend
+# Bus App - Frontend
 
-Interface web em React para um aplicativo de acompanhamento de ônibus, rotas e preferências do usuário. Este frontend consome a API do backend local (Node/Express) e implementa autenticação, pesquisa, direções favoritas e visualização de linhas em tempo real.
+React web interface for a transit app with buses, routes, and user preferences. This frontend consumes the local backend API (Node/Express) and implements authentication, search, favorite directions, and real-time lines visualization.
 
-## Visão geral
+## Overview
 
-- Tema escuro consistente com variáveis:
+- Dark theme with variables:
   - `--primary-color: #FFA652`
-  - Cinzas: `#6F6F6F`, `#9C9A9A`
-  - Fundo: `#363636`
+  - Grays: `#6F6F6F`, `#9C9A9A`
+  - Background: `#363636`
   - Cards: `#2D2B2B`
-- Navegação: Header fixo no topo com campo de busca; Footer fixo com atalhos (Directions, Stations, Lines).
-- Páginas principais:
-  - Directions: destinos frequentes (Home/Work) com tempo/distância e modal para salvar rotas.
-  - Lines: lista de veículos e posições em tempo real (lt0, lt1, ta) com filtro, paginação e auto‑refresh.
-  - Stations: mapa (Leaflet + OSM) e traçado de rotas via GraphHopper.
-  - Search: busca com favoritos/recentes por usuário e modal “Add location”.
-  - UserProfile: dados do usuário logado e logout.
-  - Login/Register: autenticação com redirecionamento para Directions.
+- Navigation: fixed header with search field; fixed footer with shortcuts (Directions, Stations, Lines).
+- Main pages:
+  - Directions: frequent destinations (Home/Work) with time/distance and a modal to save routes.
+  - Lines: list of vehicles and real-time positions (lt0, lt1, ta) with filter, pagination, and auto-refresh.
+  - Stations: map (Leaflet + OSM) and route plotting via GraphHopper.
+  - Search: user favorites/recents and an Add location modal.
+  - UserProfile: logged-in user data and logout.
+  - Login/Register: authentication with redirect to Directions.
 
 ## Stack
 
 - React + Vite
 - React Router DOM
-- Tailwind CSS (utilização de classes utilitárias no tema escuro)
-- Font Awesome (ícones)
-- Leaflet (mapa) + OpenStreetMap tiles
-- Fetch/Axios para integração com a API (base: `http://localhost:3000`)
+- Tailwind CSS (utility classes for the dark theme)
+- Font Awesome (icons)
+- Leaflet (map) + OpenStreetMap tiles
+- Fetch/Axios for API integration (base: `http://localhost:3000`)
 
-## Estrutura de pastas (resumo)
+## Folder structure (summary)
 
 ```
 frontend/
@@ -50,97 +50,97 @@ frontend/
   index.html
 ```
 
-## Rotas
+## Routes
 
-- `/login` – Login
-- `/register` – Cadastro
-- `/directions` – Destinos frequentes (Home/Work) com modal de configuração
-- `/lines` – Linhas/veículos em tempo real
-- `/stations` – Mapa e traçado de rotas (GraphHopper)
-- `/search` – Tela de busca, favoritos e recentes
-- `/profile` – Perfil do usuário, logout
-- `/` – Redireciona para `/directions` se autenticado, senão `/login`
+- `/login` - Login
+- `/register` - Register
+- `/directions` - Frequent destinations (Home/Work) with setup modal
+- `/lines` - Real-time lines/vehicles
+- `/stations` - Map and route plotting (GraphHopper)
+- `/search` - Search screen, favorites, and recents
+- `/profile` - User profile, logout
+- `/` - Redirects to `/directions` if authenticated, otherwise `/login`
 
-## Componentes
+## Components
 
-- `Header`: ícone do usuário (vai/volta do perfil) e campo de busca (abre `/search`).
-- `Footer`: navegação inferior com realce da rota ativa.
+- `Header`: user icon (toggle profile) and search field (opens `/search`).
+- `Footer`: bottom navigation with active route highlight.
 
-## Funcionalidades principais
+## Core features
 
-- Autenticação com JWT (token salvo em `localStorage`).
-- `UserProfile` consome `GET /auth/me` para obter dados reais do usuário.
-- `Directions` salva e busca preferências por usuário via endpoints de `directions` no backend; persiste `homeInfo`/`workInfo` no `localStorage`.
-- `Lines` consome `GET /lines/positions` e mostra lt0/lt1/ta, com:
-  - Filtro por texto (origem/destino/veículo)
-  - Paginação e seleção de page size
-  - Atualização manual e auto‑refresh 30s
-  - Formatação local de data/hora
-- `Stations` chama `GET /stations/route?point1=lat,lng&point2=lat,lng`, decodifica a polyline e desenha no Leaflet, com distância/tempo resumidos.
-- `Search` gerencia Favoritos e Recentes por usuário (chaves `favorites_<userId>`/`recents_<userId>` no `localStorage`). Modal “Add location” adiciona itens em Recent (não favoritos por padrão).
+- JWT authentication (token stored in `localStorage`).
+- `UserProfile` consumes `GET /auth/me` to fetch real user data.
+- `Directions` saves and loads preferences per user via `directions` endpoints; persists `homeInfo`/`workInfo` in `localStorage`.
+- `Lines` consumes `GET /lines/positions` and shows lt0/lt1/ta, with:
+  - Text filter (origin/destination/vehicle)
+  - Pagination and page size selection
+  - Manual refresh and 30s auto-refresh
+  - Local date/time formatting
+- `Stations` calls `GET /stations/route?point1=lat,lng&point2=lat,lng`, decodes the polyline, and draws it on Leaflet, with distance/time summary.
+- `Search` manages Favorites and Recents per user (keys `favorites_<userId>`/`recents_<userId>` in `localStorage`). The Add location modal adds items to Recents by default (not favorites).
 
-## Variáveis e configuração
+## Variables and configuration
 
 - API Base URL: `http://localhost:3000`
-- JWT é armazenado em `localStorage.token` após login/registro.
-- Usuário atual em `localStorage.user` (objeto com pelo menos `id`, `name`, `email`).
-- Preferências locais:
-  - `homeInfo`, `workInfo`: objetos usados na Directions.
-  - `favorites_<userId>`, `recents_<userId>`: listas da Search.
+- JWT is stored in `localStorage.token` after login/register.
+- Current user in `localStorage.user` (object with at least `id`, `name`, `email`).
+- Local preferences:
+  - `homeInfo`, `workInfo`: objects used by Directions.
+  - `favorites_<userId>`, `recents_<userId>`: Search lists.
 
-## Como executar
+## How to run
 
-1. Instale dependências:
+1. Install dependencies:
    - `npm install`
-2. Rode em desenvolvimento (porta padrão do Vite):
+2. Run in development (Vite default port):
    - `npm run dev`
-3. Build para produção:
+3. Production build:
    - `npm run build`
-4. Preview do build:
+4. Preview the build:
    - `npm run preview`
 
-Certifique‑se de que o backend está rodando em `http://localhost:3000`.
+Make sure the backend is running at `http://localhost:3000`.
 
-## Endpoints utilizados
+## Endpoints used
 
-- `POST /auth/login` – Login (retorna `{ token, user }`)
-- `POST /auth/register` – Registro (retorna `{ token?, user }`)
-- `GET /auth/me` – Dados do usuário autenticado
-- `POST /directions/setHome` – Salva Home do usuário
-- `POST /directions/setWork` – Salva Work do usuário
-- `GET /directions/preferences?userId=...` – Busca preferências
-- `GET /lines/positions` – Linhas/veículos em tempo real (usa `l[].vs[]`)
-- `GET /stations/route?point1=..&point2=..` – Rota GraphHopper (polyline/geojson)
+- `POST /auth/login` - Login (returns `{ token, user }`)
+- `POST /auth/register` - Register (returns `{ token?, user }`)
+- `GET /auth/me` - Authenticated user data
+- `POST /directions/setHome` - Save user home
+- `POST /directions/setWork` - Save user work
+- `GET /directions/preferences?userId=...` - Fetch preferences
+- `GET /lines/positions` - Real-time lines/vehicles (uses `l[].vs[]`)
+- `GET /stations/route?point1=..&point2=..` - GraphHopper route (polyline/geojson)
 
-## Estilo e ícones
+## Style and icons
 
-- Tailwind classes para compor o tema escuro (cores definidas acima).
-- Font Awesome para ícones (usuário, busca, mapa, favorito, etc.).
+- Tailwind classes compose the dark theme (colors above).
+- Font Awesome icons (user, search, map, favorite, etc.).
 
-## Estado e persistência
+## State and persistence
 
-- `localStorage` é usado para:
+- `localStorage` is used for:
   - `token`, `user`, `passwordLength`
   - `homeInfo`, `workInfo`
   - `favorites_<userId>`, `recents_<userId>`
 
-## Dicas de solução de problemas
+## Troubleshooting tips
 
-- Página Lines mostra “Nenhum veículo disponível”:
-  - Verifique se `data.l[*].vs` existe no retorno do backend.
-  - Confira CORS e status do endpoint `/lines/positions`.
-- Mapa em Stations não renderiza/está cortado:
-  - Verifique o carregamento do Leaflet via CDN e chame `invalidateSize` após montar.
-  - Confirme os parâmetros `point1`/`point2` no formato `lat,lng`.
-- Perfil sem dados de usuário:
-  - Confira o token no `localStorage` e o retorno de `/auth/me`.
+- Lines page shows "No vehicles available":
+  - Check that `data.l[*].vs` exists in the backend response.
+  - Verify CORS and the `/lines/positions` endpoint status.
+- Stations map does not render or is clipped:
+  - Verify Leaflet loads via CDN and call `invalidateSize` after mount.
+  - Confirm `point1`/`point2` use the `lat,lng` format.
+- Profile has no user data:
+  - Check the token in `localStorage` and the `/auth/me` response.
 
-## Roadmap (idéias)
+## Roadmap (ideas)
 
-- Sincronizar Favorites/Recents com o backend por usuário.
-- Seleção de ponto pelo mapa (Stations) para preencher “Add location”.
-- Melhorias de acessibilidade e testes automatizados.
+- Sync Favorites/Recents with the backend per user.
+- Select a point on the map (Stations) to populate Add location.
+- Accessibility improvements and automated tests.
 
 ---
 
-Feito com React + Vite e muito café. ☕
+Built with React + Vite and lots of coffee.
