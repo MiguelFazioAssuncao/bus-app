@@ -1,56 +1,55 @@
-# Bus App SA 
+# Bus App
 
-Uma aplicação completa para consulta de transporte público, com integração às APIs SPTrans (Olho Vivo) e GraphHopper para planejamento de rotas.
+A complete public transit app with integration to the SPTrans (Olho Vivo) and GraphHopper APIs for route planning.
 
-## Sobre o Projeto
+## About the Project
 
-O Bus App SA é uma solução moderna para facilitar o uso do transporte público. A aplicação oferece:
+Bus App is a modern solution to make public transportation easier. The app offers:
 
-- **Consulta em tempo real** de posições dos ônibus
-- **Planejamento de rotas** inteligente
-- **Gerenciamento de preferências** (casa e trabalho)
-- **Interface intuitiva** e responsiva
+- **Real-time** vehicle position tracking
+- **Smart route planning**
+- **Preferences management** (home and work)
+- **Intuitive, responsive UI**
 
-## Arquitetura
+## Architecture
 
-O projeto está dividido em duas partes principais:
+The project is split into two main parts:
 
-### Backend (API REST)
-- **Node.js** com Express
-- **PostgreSQL** como banco de dados
-- **Integração** com APIs SPTrans e GraphHopper
-- **Autenticação JWT**
+### Backend (REST API)
+- **Node.js** with Express
+- **PostgreSQL** database
+- **Integration** with SPTrans and GraphHopper APIs
+- **JWT authentication**
 
-### 🎨 Frontend
+### Frontend
 
-Interface web em React que consome a API do backend e entrega a experiência ao usuário final.
+React web interface that consumes the backend API and delivers the user experience.
 
-— Tecnologias
+Technologies
 - React + Vite
 - React Router DOM
-- Tailwind CSS (tema escuro)
-- Font Awesome (ícones)
-- Leaflet + OpenStreetMap (mapa)
+- Tailwind CSS (dark theme)
+- Font Awesome (icons)
+- Leaflet + OpenStreetMap (map)
 
-— Funcionalidades
-- Header com campo de busca que abre a tela de Search; Footer com navegação (Directions, Stations, Lines)
-- Autenticação (Login/Register) com redirecionamento para Directions
-- UserProfile com dados do usuário via `GET /auth/me` e logout
-- Directions com “Home/Work” e modal para salvar rotas e preferências por usuário
-- Lines com dados em tempo real de `/lines/positions` (filtro, paginação, auto‑refresh)
-- Stations com traçado de rota (GraphHopper) e visualização no Leaflet
-- Search com favoritos e recentes por usuário (persistência no localStorage) e modal “Add location”
+Key features
+- Header with search field that opens Search; footer navigation (Directions, Stations, Lines)
+- Authentication (Login/Register) with redirect to Directions
+- UserProfile with data via `GET /auth/me` and logout
+- Directions with Home/Work and a modal to save user routes/preferences
+- Lines with real-time data from `/lines/positions` (filtering, pagination, auto-refresh)
+- Stations with route plotting (GraphHopper) and Leaflet map
+- Search with user favorites/recents (localStorage persistence) and an Add location modal
 
-— Rotas principais
+Main routes
 - `/login`, `/register`, `/directions`, `/lines`, `/stations`, `/search`, `/profile`
 
-— Scripts (na pasta frontend/)
-- `npm install` — instala dependências
-- `npm run dev` — desenvolvimento (Vite)
-- `npm run build` — build de produção
-- `npm run preview` — preview do build
+Scripts (in frontend/)
+- `npm install` - install dependencies
+- `npm run dev` - development (Vite)
+- `npm run build` - production build
+- `npm run preview` - preview the build
 
-📖 **[Documentação completa do Frontend →](./frontend/README.md)**
-
-
-📖 **[Documentação completa do Backend →](./backend/README.md)**
+Full docs
+- [Frontend documentation](./frontend/README.md)
+- [Backend documentation](./backend/README.md)
