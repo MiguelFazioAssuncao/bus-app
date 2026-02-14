@@ -58,7 +58,6 @@ const Search = () => {
   const saveChosenLocation = () => {
     if (!modalTitle.trim()) return;
     const newItem = { id: `fav-${Date.now()}`, title: modalTitle.trim(), subtitle: modalSubtitle.trim(), icon: faLocationDot };
-    // Add only to recents by default, not as favorite
     setRecents([{ id: `r-${Date.now()}`, title: newItem.title, subtitle: newItem.subtitle, icon: faClock, favorite: false }, ...recents]);
     if (modalTitle.trim().toLowerCase() === 'home') {
       try {
@@ -140,7 +139,7 @@ const Search = () => {
         <hr className="border-gray-700 my-5" />
 
         <div className="mt-2">
-          <div className="text-sm text-[#9C9A9A] mb-2">Recent</div>
+          <div className="text-sm text-[#9C9A9A] mb-2">Recents</div>
           <div className="space-y-3">
             {recents.map((r) => (
               <div key={r.id} className="bg-[#2D2B2B] rounded-md px-5 py-4">
@@ -181,7 +180,7 @@ const Search = () => {
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
                   className="w-full bg-[#262424] rounded-md px-4 py-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-(--primary-color)"
-                  placeholder="Ex.: home"
+                  placeholder="e.g., home"
                 />
               </div>
               <div>
@@ -191,7 +190,7 @@ const Search = () => {
                   value={modalSubtitle}
                   onChange={(e) => setModalSubtitle(e.target.value)}
                   className="w-full bg-[#262424] rounded-md px-4 py-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-(--primary-color)"
-                  placeholder="Rua ..."
+                  placeholder="Street ..."
                 />
               </div>
               <div className="flex items-center justify-end gap-3 pt-2">

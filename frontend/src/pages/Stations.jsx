@@ -95,7 +95,7 @@ const Stations = () => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const path = data?.paths?.[0];
-      if (!path) throw new Error("Rota não encontrada");
+      if (!path) throw new Error("Route not found");
       let latlngs = [];
       if (data?.info?.points_encoded === true || path?.points_encoded === true || typeof path?.points === 'string') {
         const encoded = typeof path.points === 'string' ? path.points : (data?.paths?.[0]?.points);
@@ -103,7 +103,7 @@ const Stations = () => {
       } else if (path?.points?.coordinates) {
         latlngs = path.points.coordinates.map(([lng, lat]) => [lat, lng]);
       }
-      if (!latlngs.length) throw new Error("Falha ao decodificar linhas da rota");
+      if (!latlngs.length) throw new Error("Failed to decode route polyline");
 
       const start = p1.split(',').map(Number)
       const end = p2.split(',').map(Number);
@@ -113,7 +113,7 @@ const Stations = () => {
         timeMin: Math.round(path.time / 60000)
       });
     } catch (e) {
-      setError(e.message || 'Erro ao buscar rota');
+      setError(e.message || 'Failed to fetch route');
     } finally {
       setLoading(false);
     }
@@ -149,13 +149,13 @@ const Stations = () => {
               disabled={loading}
               className="w-full md:w-auto px-4 py-2 rounded-md bg-orange-400 hover:bg-(--primary-color) disabled:opacity-50"
             >
-              {loading ? 'Buscando...' : 'Traçar rota'}
+              {loading ? 'Fetching...' : 'Plot route'}
             </button>
           </div>
         </div>
         {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
         {summary && (
-          <p className="text-sm text-[#9C9A9A] mb-3">Distância: <span className="text-gray-200">{summary.distanceKm} km</span> · Tempo: <span className="text-gray-200">{summary.timeMin} min</span></p>
+          <p className="text-sm text-[#9C9A9A] mb-3">Distance: <span className="text-gray-200">{summary.distanceKm} km</span> · Time: <span className="text-gray-200">{summary.timeMin} min</span></p>
         )}
         <div className="min-h-[30vh] h-[40vh] md:h-[50vh]">
           <div ref={mapRef} className="w-full h-full rounded-md overflow-hidden bg-[#2D2B2B]" />

@@ -29,7 +29,7 @@ const UserProfile = () => {
           localStorage.setItem("user", JSON.stringify(data.user));
         }
       } catch (e) {
-        setError("Falha ao carregar dados do usuário");
+        setError("Failed to load user data");
       } finally {
         setLoading(false);
       }
@@ -100,7 +100,7 @@ const UserProfile = () => {
               <div className="relative">
                 <input
                   type="text"
-                  value={showPassword ? "A senha real não é exibida por segurança(tente novamente ano que vem) 🤪" : passwordMasked}
+                  value={showPassword ? "The real password is not displayed for security reasons." : passwordMasked}
                   readOnly
                   className="w-full bg-[#262424] rounded-md px-4 py-3 text-gray-200 placeholder-[#6C6767] focus:outline-none focus:ring-2 focus:ring-(--primary-color)"
                 />
@@ -109,7 +109,7 @@ const UserProfile = () => {
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute inset-y-0 right-0 px-4 text-[#9C9A9A] hover:text-gray-200"
                 >
-                  {showPassword ? "Esconder" : "Mostrar"}
+                  {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
             </div>
@@ -120,7 +120,7 @@ const UserProfile = () => {
               onClick={handleLogout}
               className="cursor-pointer w-full hover:bg-(--primary-color) bg-orange-400 text-white rounded-md py-3 transition-colors focus:outline-none focus:ring-2 focus:ring-(--primary-color)"
             >
-              Logout
+              Log out
             </button>
           </div>
         </div>

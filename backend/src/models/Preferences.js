@@ -41,7 +41,7 @@ const Preferences = sequelize.define("Preferences", {
 
 
 Preferences.updateLocation = async (userId, type, name, distance, time) => {
-    if (!['home', 'work'].includes(type)) throw new Error('Tipo inválido');
+    if (!['home', 'work'].includes(type)) throw new Error('Invalid type');
     let preferences = await Preferences.findOne({ where: { userId } });
     const value = `${name} - ${distance}m, ${time}min`;
     if (!preferences) {

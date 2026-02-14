@@ -1,32 +1,30 @@
-import Preferences from "../models/Preferences.js"; // Importa o modelo de preferências
-import { getRoute } from "./stationsController.js"; // Importa função para buscar rota
+import Preferences from "../models/Preferences.js";
+import { getRoute } from "./stationsController.js";
 
-const pointRegex = /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/; // Regex para validar formato dos pontos
+const pointRegex = /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/;
 
-function fmtDistance(m) { // Formata distância em metros ou km
+function fmtDistance(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
 }
-function fmtMinutes(ms) { // Formata tempo em minutos
+function fmtMinutes(ms) {
   return `${Math.round(ms / 60000)} min`;
 }
 
-
-// Função genérica para salvar endereço (casa ou trabalho)
 async function setUserLocation(req, res, type) {
   try {
-    const nameField = type === 'home' ? 'homeName' : 'workName'; // Define campo do nome
-    const { userId, point1, point2 } = req.body || {}; // Extrai dados do corpo da requisição
-    const locationName = req.body?.[nameField]; // Extrai nome do endereço
-    if (!userId || !locationName || !point1 || !point2) { // Valida campos obrigatórios
-      return res.status(400).json({ message: `Os campos 'userId', '${nameField}', 'point1' e 'point2' são obrigatórios.` });
+    const nameField = type === 'home' ? 'homeName' : 'workName';
+    const { userId, point1, point2 } = req.body || {};
+    const locationName = req.body?.[nameField];
+    if (!userId || !locationName || !point1 || !point2) {
+      return res.status(400).json({ message: `Fields 'userId', '${nameField}', 'point1' and 'point2' are required.` });
     }
-    if (!pointRegex.test(point1) || !pointRegex.test(point2)) { // Valida formato dos pontos
-      return res.status(400).json({ message: "Os pontos devem estar no formato 'lat,lng'." });
+    if (!pointRegex.test(point1) || !pointRegex.test(point2)) {
+      return res.status(400).json({ message: "Points must be in the format 'lat,lng'." });
     }
 
-    let routeResult; // Variável para armazenar resultado da rota
-    const mockReq = { query: { point1, point2 } }; // Monta requisição mock para getRoute
-    const mockRes = { // Monta resposta mock para capturar resultado
+    let routeResult;
+    const mockReq = { query: { point1, point2 } };
+    const mockRes = {
       status: (code) => ({
         json: (data) => {
           routeResult = { code, data };
@@ -35,25 +33,25 @@ async function setUserLocation(req, res, type) {
       }),
     };
 
-    await getRoute(mockReq, mockRes); // Chama função de rota
+    await getRoute(mockReq, mockRes);
 
-    const routeData = routeResult?.data; // Extrai dados da rota
-    if (!routeData || !Array.isArray(routeData.paths) || !routeData.paths.length) { // Valida retorno da rota
-      return res.status(502).json({ message: "Falha ao obter rota." });
+    const routeData = routeResult?.data;
+    if (!routeData || !Array.isArray(routeData.paths) || !routeData.paths.length) {
+      return res.status(502).json({ message: "Failed to fetch route." });
     }
 
-    const best = routeData.paths[0]; // Seleciona melhor caminho
-    const distanceMeters = Math.round(best.distance); // Calcula distância em metros
-    const timeMinutes = Math.max(1, Math.round(best.time / 60000)); // Calcula tempo em minutos (mínimo 1)
+    const best = routeData.paths[0];
+    const distanceMeters = Math.round(best.distance);
+    const timeMinutes = Math.max(1, Math.round(best.time / 60000));
 
     try {
-      await Preferences.updateLocation(userId, type, locationName, distanceMeters, timeMinutes); // Salva endereço nas preferências
+      await Preferences.updateLocation(userId, type, locationName, distanceMeters, timeMinutes);
     } catch (dbErr) {
-      return res.status(500).json({ message: `Erro ao salvar preferência de ${type}`, error: dbErr.message }); // Retorna erro de banco
+      return res.status(500).json({ message: `Failed to save ${type} preference`, error: dbErr.message });
     }
 
-    return res.status(200).json({ // Retorna sucesso e dados do endereço
-      message: `${type === 'home' ? 'Home' : 'Work'} atualizado com sucesso.`,
+    return res.status(200).json({
+      message: `${type === 'home' ? 'Home' : 'Work'} updated successfully.`,
       [type]: {
         name: locationName,
         point: point1,
@@ -68,24 +66,22 @@ async function setUserLocation(req, res, type) {
       },
     });
   } catch (err) {
-    return res.status(500).json({ message: "Internal server error", error: err.message }); // Retorna erro interno
+    return res.status(500).json({ message: "Internal server error", error: err.message });
   }
 }
 
-export const setHome = (req, res) => setUserLocation(req, res, 'home'); // Endpoint para salvar endereço de casa
-export const setWork = (req, res) => setUserLocation(req, res, 'work'); // Endpoint para salvar endereço de trabalho
+export const setHome = (req, res) => setUserLocation(req, res, 'home');
+export const setWork = (req, res) => setUserLocation(req, res, 'work');
 
-// GET /directions/preferences?userId=123
 export const getPreferences = async (req, res) => {
   try {
     const { userId } = req.query || {};
     if (!userId) {
-      return res.status(400).json({ message: "O parâmetro 'userId' é obrigatório." });
+      return res.status(400).json({ message: "The 'userId' parameter is required." });
     }
 
     const prefs = await Preferences.findOne({ where: { userId } });
     const parseEntry = (val) => {
-      // esperado: "Nome - 2400m, 26min"
       if (!val || typeof val !== 'string') return null;
       const [namePart, rest] = val.split(' - ');
       if (!rest) return { name: namePart };

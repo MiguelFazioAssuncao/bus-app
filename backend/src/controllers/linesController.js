@@ -1,53 +1,44 @@
+import axios from "axios";
+import dotenv from "dotenv";
 
-import axios from "axios"; // Importa biblioteca para requisições HTTP
-import dotenv from "dotenv"; // Importa biblioteca para variáveis de ambiente
+dotenv.config();
 
-dotenv.config(); // Carrega variáveis do arquivo .env
+const token = process.env.TOKEN_LINE;
+const BASE_URL = process.env.BASE_URL_SP;
 
-const token = process.env.TOKEN_LINE; // Token de autenticação da API Olho Vivo
-const BASE_URL = process.env.BASE_URL_SP; // URL base da API Olho Vivo
-
-const axiosInstance = axios.create({ // Instância do axios para requisições autenticadas
+const axiosInstance = axios.create({
   baseURL: BASE_URL,
   withCredentials: true
 });
 
-let sessionCookies = ""; // Armazena cookies de sessão após autenticação
+let sessionCookies = "";
 
-// Função para autenticar na API Olho Vivo
 export const authenticate = async () => {
   try {
-    const response = await axios.post(`${BASE_URL}/Login/Autenticar?token=${token}`); // Faz requisição de autenticação
-    const setCookieHeader = response.headers["set-cookie"]; // Captura cookies da resposta
+    const response = await axios.post(`${BASE_URL}/Login/Autenticar?token=${token}`);
+    const setCookieHeader = response.headers["set-cookie"];
 
     if (setCookieHeader) {
-      sessionCookies = setCookieHeader.join("; "); // Salva cookies para próximas requisições
+      sessionCookies = setCookieHeader.join("; ");
     }
 
-    return true; // Retorna sucesso
+    return true;
   } catch (err) {
-    res.status(500).json({ message: "Internal server error", error: err.message }); // Retorna erro interno
+    res.status(500).json({ message: "Internal server error", error: err.message });
   }
 };
 
-/* informações importantes de retorno
-[string]ta = Indica o horário universal (UTC) em que a localização foi capturada. Essa informação está no padrão ISO 8601
-[string]lt0 = Letreiro de destino da linha
-[string]lt1 = Letreiro de origem da linha
-*/
-
-// Função para buscar posições dos veículos nas linhas
 export const getPositions = async (req, res) => {
     try {
-        await authenticate(); // Autentica antes de buscar posições
+        await authenticate();
         
-        const response = await axiosInstance.get(`/Posicao`, { // Faz requisição para buscar posições
+        const response = await axiosInstance.get(`/Posicao`, {
           headers: {
-            Cookie: sessionCookies, // Envia cookies de sessão
+            Cookie: sessionCookies,
           },
         });
-        res.status(200).json(response.data); // Retorna dados recebidos da API
+        res.status(200).json(response.data);
     } catch(err) {
-        res.status(500).json({ message: "Internal server error", error: err.message }); // Retorna erro interno
+        res.status(500).json({ message: "Internal server error", error: err.message });
     }
 }
