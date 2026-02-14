@@ -66,7 +66,7 @@ const Register = () => {
         />
 
         <div className="text-3xl sm:text-4xl md:text-5xl text-center text-(--gray-primary) mt-4">
-          <h1>Welcome to bus!</h1>
+          <h1>Welcome to Bus App!</h1>
         </div>
 
         <div className="text-(--gray-secondary) text-xs sm:text-sm md:text-base mt-2 tracking-wide text-center">
