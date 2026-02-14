@@ -78,7 +78,7 @@ const Directions = () => {
       const stored = localStorage.getItem("user");
       const userId = stored ? JSON.parse(stored)?.id : null;
       if (!userId) {
-        setError("Usuário não identificado. Faça login novamente.");
+        setError("User not identified. Please log in again.");
         return;
       }
 
@@ -103,7 +103,7 @@ const Directions = () => {
         throw new Error(t?.message || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      setSuccess(data?.message || 'Salvo com sucesso');
+      setSuccess(data?.message || 'Saved successfully');
       if (modalType === 'home') {
         const h = data?.home || {};
         const next = {
@@ -125,7 +125,7 @@ const Directions = () => {
       }
       setTimeout(() => setModalOpen(false), 400);
     } catch (e) {
-      setError(e.message || 'Erro ao salvar');
+      setError(e.message || 'Failed to save');
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ const Directions = () => {
     <div className="min-h-screen bg-[#363636]">
       <Header />
       <main className="max-w-5xl mx-auto px-6 py-6 text-gray-200">
-        <h2 className="text-sm text-gray-200 mb-2">My frequent destination</h2>
+        <h2 className="text-sm text-gray-200 mb-2">My frequent destinations</h2>
         <hr className="border-gray-600 mb-6" />
 
         <div className="space-y-4">
