@@ -1,58 +1,58 @@
-# Bus App SA - Backend
+# Bus App - Backend
 
-Este projeto é o backend para o aplicativo de transporte Bus App SA, desenvolvido em Node.js com Express e Sequelize.
+This project is the backend for the Bus App transit application, built with Node.js, Express, and Sequelize.
 
-## Sumário
+## Table of Contents
 
-- [Pré-requisitos](#pré-requisitos)
-- [Configuração do ambiente](#configuração-do-ambiente)
-- [Execução local](#execução-local)
-- [Execução com Docker](#execução-com-docker)
-- [Endpoints principais](#endpoints-principais)
+- [Prerequisites](#prerequisites)
+- [Environment setup](#environment-setup)
+- [Local run](#local-run)
+- [Run with Docker](#run-with-docker)
+- [Main endpoints](#main-endpoints)
 
 ---
 
-## Pré-requisitos
+## Prerequisites
 
 - Node.js >= 18
 - npm
-- Banco de dados PostgreSQL (local ou via Docker)
-- (Opcional) Docker e Docker Compose
+- PostgreSQL database (local or via Docker)
+- (Optional) Docker and Docker Compose
 
-## Configuração do ambiente
+## Environment setup
 
-1. Clone o repositório:
+1. Clone the repository:
    ```sh
-   git clone https://github.com/MiguelFazioAssuncao/bus-app-sa.git
-   cd bus-app-sa/backend
+   git clone https://github.com/MiguelFazioAssuncao/bus-app.git
+   cd bus-app/backend
    ```
-2. Instale as dependências:
+2. Install dependencies:
    ```sh
    npm install
    ```
-3. Configure o arquivo `.env` com suas credenciais e chaves:
+3. Configure the `.env` file with your credentials and keys:
    ```env
    PORT=8080
-   JWT_SECRET=senhasecreta
-   GRAPH_HOPPER_API_KEY=seu_token_aqui
+   JWT_SECRET=your_secret
+   GRAPH_HOPPER_API_KEY=your_token_here
    GRAPH_HOPPER_BASE_URL=https://graphhopper.com/api/1
-   # ... outros parâmetros ...
+   # ... other parameters ...
    ```
-4. Configure o banco de dados em `src/database/client.js` conforme sua instância local ou Docker.
+4. Configure the database in `src/database/client.js` for your local or Docker instance.
 
-## Execução local
+## Local run
 
-1. Certifique-se que o banco de dados está rodando.
-2. Execute o backend:
+1. Make sure the database is running.
+2. Start the backend:
    ```sh
    npm start
    ```
-   O servidor estará disponível em `http://localhost:8080` (ou porta definida no `.env`).
+   The server will be available at `http://localhost:8080` (or the port defined in `.env`).
 
-## Execução com Docker
+## Run with Docker
 
-1. Certifique-se que Docker e Docker Compose estão instalados.
-2. Crie um arquivo `docker-compose.yml` semelhante ao exemplo abaixo:
+1. Ensure Docker and Docker Compose are installed.
+2. Create a `docker-compose.yml` similar to the example below:
    ```yaml
    version: "3.8"
    services:
@@ -68,25 +68,25 @@ Este projeto é o backend para o aplicativo de transporte Bus App SA, desenvolvi
        build: .
        environment:
          PORT: 8080
-         JWT_SECRET: senhasecreta
-         GRAPH_HOPPER_API_KEY: seu_token_aqui
+         JWT_SECRET: your_secret
+         GRAPH_HOPPER_API_KEY: your_token_here
          GRAPH_HOPPER_BASE_URL: https://graphhopper.com/api/1
        ports:
          - "8080:8080"
        depends_on:
          - db
    ```
-3. Execute:
+3. Run:
    ```sh
    docker-compose up --build
    ```
 
-## Endpoints principais
+## Main endpoints
 
-### Posições das linhas
+### Line positions
 
 - `GET /lines/positions`
-  **Exemplo de retorno:**
+  **Example response:**
   ```json
   [
     {
@@ -113,21 +113,21 @@ Este projeto é o backend para o aplicativo de transporte Bus App SA, desenvolvi
   ]
   ```
 
-### Rota entre pontos
+### Route between points
 
 - `GET /stations/route`
-  **Parâmetros (query):**
+  **Query parameters:**
 
-  - `point1`: string, coordenada inicial no formato "lat,lng" (ex: -23.55052,-46.633308)
-  - `point2`: string, coordenada final no formato "lat,lng" (ex: -23.551234,-46.634567)
+  - `point1`: string, start coordinate in "lat,lng" format (example: -23.55052,-46.633308)
+  - `point2`: string, end coordinate in "lat,lng" format (example: -23.551234,-46.634567)
 
-  **Exemplo de requisição:**
+  **Request example:**
 
   ```http
   GET /stations/route?point1=-23.55052,-46.633308&point2=-23.551234,-46.634567
   ```
 
-  **Exemplo de retorno:**
+  **Response example:**
 
   ```json
   {
@@ -157,24 +157,24 @@ Este projeto é o backend para o aplicativo de transporte Bus App SA, desenvolvi
             "heading": 324.61,
             "sign": 0,
             "interval": [0, 2],
-            "text": "Continue na Praça da Sé",
+            "text": "Continue on Praca da Se",
             "time": 19602,
-            "street_name": "Praça da Sé"
+            "street_name": "Praca da Se"
           },
           {
             "distance": 75.75,
             "sign": -2,
             "interval": [2, 3],
-            "text": "Vire à esquerda na Praça da Sé",
+            "text": "Turn left on Praca da Se",
             "time": 9739,
-            "street_name": "Praça da Sé"
+            "street_name": "Praca da Se"
           },
           {
             "distance": 0,
             "sign": 4,
             "last_heading": 204.13340324920972,
             "interval": [3, 3],
-            "text": "Destino alcançado!",
+            "text": "Destination reached!",
             "time": 0,
             "street_name": ""
           }
@@ -188,19 +188,19 @@ Este projeto é o backend para o aplicativo de transporte Bus App SA, desenvolvi
   }
   ```
 
-### Autenticação
+### Authentication
 
 - `POST /auth/login`
   **Payload:**
 
   ```json
   {
-    "email": "usuario@email.com",
-    "password": "senha"
+    "email": "user@email.com",
+    "password": "password"
   }
   ```
 
-  **Exemplo de retorno:**
+  **Response example:**
 
   ```json
   {
@@ -213,43 +213,43 @@ Este projeto é o backend para o aplicativo de transporte Bus App SA, desenvolvi
   **Payload:**
   ```json
   {
-    "name": "Novo Usuário",
-    "email": "novo@email.com",
-    "password": "senha"
+    "name": "New User",
+    "email": "new@email.com",
+    "password": "password"
   }
   ```
-  **Exemplo de retorno:**
+  **Response example:**
   ```json
   {
     "message": "User created successfully",
     "user": {
       "created_at": "2025-09-23T17:54:12.911Z",
       "id": 2,
-      "name": "Novo Usuário",
-      "email": "novo@email.com",
+      "name": "New User",
+      "email": "new@email.com",
       "password": "<password>"
     }
   }
   ```
 
-### Direções
+### Directions
 
 - `POST /directions/setHome`
   **Payload:**
   ```json
   {
     "userId": 1,
-    "homeName": "Casa",
+    "homeName": "Home",
     "point1": "-23.55052,-46.633308",
     "point2": "-23.551234,-46.634567"
   }
   ```
-  **Exemplo de retorno:**
+  **Response example:**
   ```json
   {
-    "message": "Home atualizado com sucesso.",
+    "message": "Home updated successfully.",
     "home": {
-      "name": "Casa",
+      "name": "Home",
       "point": "-23.55052,-46.633308",
       "distanceMeters": 130,
       "timeMinutes": 1,
@@ -267,17 +267,17 @@ Este projeto é o backend para o aplicativo de transporte Bus App SA, desenvolvi
   ```json
   {
     "userId": 1,
-    "workName": "Trabalho",
+    "workName": "Work",
     "point1": "-23.55052,-46.633308",
     "point2": "-23.551234,-46.634567"
   }
   ```
-  **Exemplo de retorno:**
+  **Response example:**
   ```json
   {
-    "message": "Work atualizado com sucesso.",
+    "message": "Work updated successfully.",
     "work": {
-      "name": "Trabalho",
+      "name": "Work",
       "point": "-23.55052,-46.633308",
       "distanceMeters": 130,
       "timeMinutes": 1,
@@ -291,8 +291,8 @@ Este projeto é o backend para o aplicativo de transporte Bus App SA, desenvolvi
   }
   ```
 
-## Observações
+## Notes
 
-- Certifique-se de configurar corretamente as variáveis de ambiente e o banco de dados.
-- Para uso da API GraphHopper, obtenha uma chave em https://graphhopper.com/
-- Para dúvidas, consulte os arquivos de configuração e o código fonte.
+- Make sure environment variables and database configuration are set correctly.
+- For GraphHopper usage, get an API key at https://graphhopper.com/
+- For questions, check the configuration files and source code.
