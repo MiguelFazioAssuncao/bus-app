@@ -1,10 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/bus-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bus App</title>
+    <meta
+      name="description"
+      content="Explore São Paulo, salve seus lugares favoritos e consulte as posições de ônibus disponíveis na SPTrans. Sua cidade, mais perto com o Bus App."
+    />
+    <meta name="theme-color" content="#f7f8fa" />
+    <title>Seu próximo destino · Bus App</title>
+    <script>
+      try {
+        var t = localStorage.getItem("busapp-theme");
+        document.documentElement.dataset.theme =
+          t === "dark" ||
+          (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)
+            ? "dark"
+            : "light";
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

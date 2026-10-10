@@ -1,203 +1,234 @@
-import React, { useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faLock } from "@fortawesome/free-solid-svg-icons";
-import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import AuthFrame from "../components/AuthFrame.jsx";
+import { Icon } from "../components/ui.jsx";
+import { api } from "../lib/api.js";
+import "../styles/auth.css";
 
-const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  const handleLogin = async () => {
-    setLoading(true);
-    setErrorMsg("");
-
-    try {
-      const response = await axios.post("http://localhost:3000/auth/login", {
-        email,
-        password,
-      });
-
-      if (response?.data?.token) {
-        localStorage.setItem("token", response.data.token);
-      }
-      if (response?.data?.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-      } else {
-        const inferredName = typeof email === 'string' && email.includes('@') ? email.split('@')[0] : '';
-        localStorage.setItem("user", JSON.stringify({ name: inferredName, email }));
-      }
-      localStorage.setItem("passwordLength", String((password || '').length));
-      navigate("/directions");
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        setErrorMsg(error.response?.data?.message || "Error logging in");
-      } else {
-        setErrorMsg("An unexpected error occurred");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="bg-(--primary-color) min-h-screen h-screen overflow-y-auto w-full max-w-full box-border flex flex-col lg:flex-row">
-      <div className="hidden 2xl:flex w-[45%] max-w-[900px] h-full items-center justify-center overflow-hidden">
-        <img
-          src="/bus1.png"
-          alt="Bus Illustration"
-          className="w-full h-full object-contain"
-        />
-      </div>
-
-      <div className="bg-white flex flex-1 flex-col items-center justify-center px-4 sm:px-8 md:px-12 xl:px-20 2xl:px-32 py-6 sm:py-8 md:py-10 xl:py-14 2xl:py-20 xl:rounded-l-4xl max-w-full box-border">
-        <div className="w-full max-w-3xl mx-auto flex flex-col items-center gap-y-5 sm:gap-y-6">
-          <img src="/favicon.ico" alt="Logo" className="w-14 sm:w-16 md:w-20" />
-
-          <h1 className="text-[clamp(1.5rem,2.5vw,2.5rem)] font-semibold text-center text-(--gray-primary)">
-            Welcome
-          </h1>
-          <p className="text-[clamp(0.75rem,1.2vw,1rem)] text-(--gray-secondary) text-center">
-            Log in to your account to continue
-          </p>
-
-          <div className="w-full flex flex-col gap-4">
-            <div className="relative w-full">
-              <div className="absolute inset-y-0 left-4 flex items-center text-gray-400">
-                <FontAwesomeIcon icon={faUser} className="text-base sm:text-lg" />
-              </div>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-3xl text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-(--primary-color) focus:border-transparent transition-all duration-300 ease-in-out"
-              />
-            </div>
-
-            <div className="relative w-full">
-              <div className="absolute inset-y-0 left-4 flex items-center text-gray-400">
-                <FontAwesomeIcon icon={faLock} className="text-base sm:text-lg" />
-              </div>
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-3xl text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-(--primary-color) focus:border-transparent transition-all duration-300 ease-in-out"
-              />
-            </div>
-
-            {errorMsg && (
-              <p className="text-red-600 text-sm text-center">{errorMsg}</p>
-            )}
-
-            <div className="text-right w-full text-xs sm:text-sm text-(--gray-secondary)">
-              <Link
-                to="/forgot-password"
-                className="underline hover:text-(--gray-primary)"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-2">
-            <button
-              onClick={handleLogin}
-              disabled={loading}
-              className="relative inline-flex items-center justify-center px-16 sm:px-20 py-3 sm:py-4 overflow-hidden tracking-tighter text-white bg-gray-800 rounded-4xl group cursor-pointer hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-orange-600 rounded-full group-hover:w-72 group-hover:h-72"></span>
-              <span className="absolute bottom-0 left-0 h-full -ml-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-auto h-full opacity-100 object-stretch"
-                  viewBox="0 0 487 487"
-                >
-                  <path
-                    fillOpacity=".1"
-                    fillRule="nonzero"
-                    fill="#FFF"
-                    d="M0 .3c67 2.1 134.1 4.3 186.3 37 52.2 32.7 89.6 95.8 112.8 150.6 23.2 54.8 32.3 101.4 61.2 149.9 28.9 48.4 77.7 98.8 126.4 149.2H0V.3z"
-                  />
-                </svg>
-              </span>
-              <span className="absolute top-0 right-0 w-14 h-full -mr-3">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="object-cover w-full h-full"
-                  viewBox="0 0 487 487"
-                >
-                  <path
-                    fillOpacity=".1"
-                    fillRule="nonzero"
-                    fill="#FFF"
-                    d="M487 486.7c-66.1-3.6-132.3-7.3-186.3-37s-95.9-85.3-126.2-137.2c-30.4-51.8-49.3-99.9-76.5-151.4C70.9 109.6 35.6 54.8.3 0H487v486.7z"
-                  />
-                </svg>
-              </span>
-              <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-linear-to-b from-transparent via-transparent to-gray-200"></span>
-              <span className="relative text-base sm:text-lg font-semibold">
-                {loading ? "Loading..." : "Login"}
-              </span>
-            </button>
-          </div>
-
-          <div className="text-center text-xs sm:text-sm text-(--gray-secondary) mt-4 flex flex-wrap justify-center">
-            <span>Don't have an account?</span>
-            <Link
-              to="/register"
-              className="ml-1 underline hover:text-(--gray-primary)"
-            >
-              Sign up
-            </Link>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
-            <button
-              onClick={() => {
-                window.location.href = "http://localhost:8000/auth/google";
-              }}
-              className="cursor-pointer flex items-center gap-2 border border-gray-300 rounded-full px-4 py-2 bg-white shadow-sm hover:scale-105 transition-transform"
-            >
-              <img
-                src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png"
-                alt="Google"
-                className="w-5 h-auto"
-              />
-              <span className="text-sm text-gray-800 font-medium">Google</span>
-            </button>
-
-            <button className="cursor-pointer flex items-center gap-2 border border-gray-300 rounded-full px-4 py-2 bg-white shadow-sm hover:scale-105 transition-transform">
-              <img
-                src="https://logodownload.org/wp-content/uploads/2014/09/facebook-logo-3-1.png"
-                alt="Facebook"
-                className="w-5 h-auto"
-              />
-              <span className="text-sm text-gray-800 font-medium">
-                Facebook
-              </span>
-            </button>
-
-            <button className="cursor-pointer flex items-center gap-2 border border-gray-300 rounded-full px-4 py-2 bg-white shadow-sm hover:scale-105 transition-transform">
-              <img
-                src="https://pngimg.com/uploads/microsoft/microsoft_PNG5.png"
-                alt="Microsoft"
-                className="w-5 h-auto"
-              />
-              <span className="text-sm text-gray-800 font-medium">
-                Microsoft
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+const emailError = (value) => {
+  if (!value.trim()) return "Informe seu e-mail.";
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+    ? ""
+    : "Use um e-mail válido, como voce@exemplo.com.";
 };
 
-export default Login;
+const loginError = (error) => {
+  if (error.code === "SESSION_STORAGE")
+    return "Seu navegador não permitiu salvar o acesso. Confira as permissões de armazenamento e tente novamente.";
+  if (error.status === 401 || error.status === 404)
+    return "E-mail ou senha incorretos. Confira os dados e tente novamente.";
+  if (error.status === 429)
+    return "Muitas tentativas. Aguarde um pouco antes de tentar novamente.";
+  return "Não foi possível entrar agora. Verifique sua conexão e tente novamente.";
+};
+
+function saveSession(data) {
+  let previousToken;
+  let previousUser;
+  try {
+    previousToken = localStorage.getItem("token");
+    previousUser = localStorage.getItem("user");
+    // Keep the session and safe server profile together, without password metadata.
+    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("token", data.token);
+    localStorage.removeItem("passwordLength");
+  } catch {
+    // Restore the previous session if a browser storage write fails partway through.
+    try {
+      for (const [key, value] of [
+        ["token", previousToken],
+        ["user", previousUser],
+      ]) {
+        if (value == null) localStorage.removeItem(key);
+        else localStorage.setItem(key, value);
+      }
+    } catch {
+      /* Storage may reject both writes and cleanup. */
+    }
+    const error = new Error("Session storage unavailable");
+    error.code = "SESSION_STORAGE";
+    throw error;
+  }
+  window.dispatchEvent(new Event("busapp-session"));
+}
+
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [touched, setTouched] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const activeRequest = useRef(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const errors = {
+    email: emailError(email),
+    password: password ? "" : "Informe sua senha.",
+  };
+  useEffect(() => () => activeRequest.current?.abort(), []);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (loading) return;
+    setTouched({ email: true, password: true });
+    setError("");
+    const invalidField = Object.keys(errors).find((field) => errors[field]);
+    if (invalidField) {
+      event.currentTarget.elements.namedItem(invalidField)?.focus();
+      return;
+    }
+    setLoading(true);
+    const controller = new AbortController();
+    activeRequest.current = controller;
+    try {
+      const data = await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim(), password }),
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      if (!data?.token || !data?.user)
+        throw new Error("Invalid login response");
+      saveSession(data);
+      navigate("/directions", { replace: true });
+    } catch (failure) {
+      if (!controller.signal.aborted) setError(loginError(failure));
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }
+
+  return (
+    <AuthFrame>
+      <span className="eyebrow">BEM-VINDO DE VOLTA</span>
+      <h1 className="auth-title">
+        Seu caminho,
+        <br />
+        mais simples.
+      </h1>
+      <p className="auth-description">
+        Entre para acessar seu perfil e continuar sua experiência pela cidade.
+      </p>
+      {location.state?.message && (
+        <p className="status-message success auth-feedback" role="status">
+          <Icon name="check" size={18} />
+          {location.state.message}
+        </p>
+      )}
+      <form
+        className="auth-form"
+        onSubmit={handleSubmit}
+        noValidate
+        aria-busy={loading}
+      >
+        <div className="field">
+          <label htmlFor="login-email">E-mail</label>
+          <div className="auth-input-wrap">
+            <Icon name="mail" size={20} />
+            <input
+              id="login-email"
+              className="input"
+              name="email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="voce@exemplo.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              onBlur={() => setTouched((value) => ({ ...value, email: true }))}
+              aria-invalid={Boolean(touched.email && errors.email)}
+              aria-describedby={
+                touched.email && errors.email ? "login-email-error" : undefined
+              }
+              required
+            />
+          </div>
+          {touched.email && errors.email && (
+            <p
+              id="login-email-error"
+              className="auth-field-error"
+              aria-live="polite"
+            >
+              {errors.email}
+            </p>
+          )}
+        </div>
+        <div className="field">
+          <label htmlFor="login-password">Senha</label>
+          <div className="auth-input-wrap auth-password-wrap">
+            <Icon name="lock" size={20} />
+            <input
+              id="login-password"
+              className="input"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="Sua senha"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              onBlur={() =>
+                setTouched((value) => ({ ...value, password: true }))
+              }
+              aria-invalid={Boolean(touched.password && errors.password)}
+              aria-describedby={
+                touched.password && errors.password
+                  ? "login-password-error"
+                  : undefined
+              }
+              required
+            />
+            <button
+              className="icon-button auth-password-toggle"
+              type="button"
+              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((value) => !value)}
+            >
+              <Icon name={showPassword ? "eye-off" : "eye"} size={20} />
+            </button>
+          </div>
+          {touched.password && errors.password && (
+            <p
+              id="login-password-error"
+              className="auth-field-error"
+              aria-live="polite"
+            >
+              {errors.password}
+            </p>
+          )}
+        </div>
+        {error && (
+          <p className="status-message error auth-feedback" role="alert">
+            <Icon name="alert" size={18} />
+            {error}
+          </p>
+        )}
+        <button
+          className="button button-primary auth-submit"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <span className="auth-spinner" aria-hidden="true" />
+              Entrando…
+            </>
+          ) : (
+            <>
+              Entrar
+              <Icon name="arrow-right" size={18} />
+            </>
+          )}
+        </button>
+      </form>
+      <p className="auth-switch">
+        Primeira vez por aqui? <Link to="/register">Crie sua conta</Link>
+      </p>
+      <Link to="/directions" className="auth-visitor">
+        Explorar sem conta
+        <Icon name="arrow-up-right" size={16} />
+      </Link>
+    </AuthFrame>
+  );
+}

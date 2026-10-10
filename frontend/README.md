@@ -1,146 +1,127 @@
-# Bus App - Frontend
+# Bus App — Frontend
 
-React web interface for a transit app with buses, routes, and user preferences. This frontend consumes the local backend API (Node/Express) and implements authentication, search, favorite directions, and real-time lines visualization.
+Interface em português para explorar São Paulo, consultar posições de ônibus e organizar destinos. A modernização mantém o laranja da marca (`#FFA652`), com temas claro/escuro, navegação adaptada ao celular e acesso às consultas sem cadastro.
 
-## Overview
+O diagnóstico, o design system, a estrutura das páginas, as animações e as prioridades estão em [UX_DESIGN.md](docs/UX_DESIGN.md).
 
-- Dark theme with variables:
-  - `--primary-color: #FFA652`
-  - Grays: `#6F6F6F`, `#9C9A9A`
-  - Background: `#363636`
-  - Cards: `#2D2B2B`
-- Navigation: fixed header with search field; fixed footer with shortcuts (Directions, Stations, Lines).
-- Main pages:
-  - Directions: frequent destinations (Home/Work) with time/distance and a modal to save routes.
-  - Lines: list of vehicles and real-time positions (lt0, lt1, ta) with filter, pagination, and auto-refresh.
-  - Stations: map (Leaflet + OSM) and route plotting via GraphHopper.
-  - Search: user favorites/recents and an Add location modal.
-  - UserProfile: logged-in user data and logout.
-  - Login/Register: authentication with redirect to Directions.
+## Desenvolvimento
 
-## Stack
+Na pasta `frontend`, instale as dependências do lockfile:
 
-- React + Vite
-- React Router DOM
-- Tailwind CSS (utility classes for the dark theme)
-- Font Awesome (icons)
-- Leaflet (map) + OpenStreetMap tiles
-- Fetch/Axios for API integration (base: `http://localhost:3000`)
-
-## Folder structure (summary)
-
-```
-frontend/
-  public/
-    bus1.png, bus2.png, favicon.ico
-  src/
-    components/
-      Header.jsx
-      Footer.jsx
-    pages/
-      Directions.jsx
-      Lines.jsx
-      Stations.jsx
-      Search.jsx
-      Login.jsx
-      Register.jsx
-      UserProfile.jsx
-    App.jsx
-    App.css
-  index.html
+```sh
+npm ci
 ```
 
-## Routes
+Comandos disponíveis:
 
-- `/login` - Login
-- `/register` - Register
-- `/directions` - Frequent destinations (Home/Work) with setup modal
-- `/lines` - Real-time lines/vehicles
-- `/stations` - Map and route plotting (GraphHopper)
-- `/search` - Search screen, favorites, and recents
-- `/profile` - User profile, logout
-- `/` - Redirects to `/directions` if authenticated, otherwise `/login`
+```sh
+npm run dev      # Servidor Vite, normalmente em http://localhost:5173
+npm run build    # Gera a versão de produção em dist/
+npm run lint     # Verifica JavaScript/JSX e regras de React
+npm run preview # Serve o build para conferência local
+```
 
-## Components
+A interface usa React 19, React Router e Vite. O design é composto por CSS com tokens, ícones SVG locais e ilustrações SVG. Telas secundárias carregam sob demanda; o Leaflet é carregado apenas na tela de mapa.
 
-- `Header`: user icon (toggle profile) and search field (opens `/search`).
-- `Footer`: bottom navigation with active route highlight.
+## API e ambientes
 
-## Core features
+A base da API é definida em `src/lib/api.js`:
 
-- JWT authentication (token stored in `localStorage`).
-- `UserProfile` consumes `GET /auth/me` to fetch real user data.
-- `Directions` saves and loads preferences per user via `directions` endpoints; persists `homeInfo`/`workInfo` in `localStorage`.
-- `Lines` consumes `GET /lines/positions` and shows lt0/lt1/ta, with:
-  - Text filter (origin/destination/vehicle)
-  - Pagination and page size selection
-  - Manual refresh and 30s auto-refresh
-  - Local date/time formatting
-- `Stations` calls `GET /stations/route?point1=lat,lng&point2=lat,lng`, decodes the polyline, and draws it on Leaflet, with distance/time summary.
-- `Search` manages Favorites and Recents per user (keys `favorites_<userId>`/`recents_<userId>` in `localStorage`). The Add location modal adds items to Recents by default (not favorites).
+- **Desenvolvimento:** a base padrão é `/api`. O proxy de `vite.config.js` encaminha `/api/auth/login`, por exemplo, para `http://localhost:3000/auth/login`.
+- **Produção:** configure um encaminhamento `/api` no servidor de hospedagem ou defina `VITE_API_URL` antes do build. Para uma API em outro domínio, configure também o CORS do backend.
 
-## Variables and configuration
+Exemplo de `.env.local` quando a API usa um endereço diferente:
 
-- API Base URL: `http://localhost:3000`
-- JWT is stored in `localStorage.token` after login/register.
-- Current user in `localStorage.user` (object with at least `id`, `name`, `email`).
-- Local preferences:
-  - `homeInfo`, `workInfo`: objects used by Directions.
-  - `favorites_<userId>`, `recents_<userId>`: Search lists.
+```dotenv
+VITE_API_URL=https://api.exemplo.com
+```
 
-## How to run
+Variáveis com prefixo `VITE_` entram no código público do frontend. As chaves de SPTrans, GraphHopper, banco e JWT ficam no backend. Consulte [backend/README.md](../backend/README.md) e [backend/.env.example](../backend/.env.example) para preparar os serviços.
 
-1. Install dependencies:
-   - `npm install`
-2. Run in development (Vite default port):
-   - `npm run dev`
-3. Production build:
-   - `npm run build`
-4. Preview the build:
-   - `npm run preview`
+As requisições têm prazo de 15 segundos, mensagens de erro em português e cancelamento quando a tela é abandonada. Consultas a serviços reais precisam do backend configurado; autenticação, SPTrans e GraphHopper não foram validados com credenciais reais nesta modernização.
 
-Make sure the backend is running at `http://localhost:3000`.
+## Páginas e navegação
 
-## Endpoints used
+| Rota | Conteúdo |
+| --- | --- |
+| `/` | Abre `/directions`, inclusive para visitantes. |
+| `/directions` | Visão geral, origem/destino, localização atual, atalhos de casa/trabalho e descobertas. |
+| `/search` | Busca no catálogo local, filtros por categoria, favoritos, recentes e cadastro de lugares. |
+| `/lines` | Linhas e sentidos com posições disponíveis na SPTrans, busca, ordenação, favoritas e paginação. |
+| `/stations` | Mapa, origem/destino, cálculo de trajeto e resultado com distância e duração. |
+| `/profile` | Dados da conta autenticada, tema e saída; visitantes recebem acesso a entrar/criar conta. |
+| `/login` | Entrada por e-mail e senha, com validação, feedback e acesso sem conta. |
+| `/register` | Cadastro de nome, e-mail e senha com pelo menos 8 caracteres. |
 
-- `POST /auth/login` - Login (returns `{ token, user }`)
-- `POST /auth/register` - Register (returns `{ token?, user }`)
-- `GET /auth/me` - Authenticated user data
-- `POST /directions/setHome` - Save user home
-- `POST /directions/setWork` - Save user work
-- `GET /directions/preferences?userId=...` - Fetch preferences
-- `GET /lines/positions` - Real-time lines/vehicles (uses `l[].vs[]`)
-- `GET /stations/route?point1=..&point2=..` - GraphHopper route (polyline/geojson)
+No desktop, a navegação fica na lateral. No celular, as quatro áreas principais aparecem na barra inferior. Foco visível, atalhos para o conteúdo, rótulos de formulário, sugestões navegáveis por teclado e modais com foco controlado apoiam a navegação acessível. As animações respeitam `prefers-reduced-motion`.
 
-## Style and icons
+## Comportamentos principais
 
-- Tailwind classes compose the dark theme (colors above).
-- Font Awesome icons (user, search, map, favorite, etc.).
+### Destinos e busca
 
-## State and persistence
+A busca oferece sugestões de um catálogo pequeno em `src/lib/locations.js` e dos lugares salvos neste navegador. Ela ignora acentos e diferenças entre maiúsculas e minúsculas. As coordenadas do catálogo são pontos aproximados de destinos; elas não representam uma base de paradas de ônibus.
 
-- `localStorage` is used for:
-  - `token`, `user`, `passwordLength`
-  - `homeInfo`, `workInfo`
-  - `favorites_<userId>`, `recents_<userId>`
+O frontend ainda não possui geocodificação de endereços. Para lugares fora do catálogo, informe latitude e longitude decimais, como `-23.5505,-46.6333`. A localização atual depende da permissão do navegador e de um contexto seguro (HTTPS ou localhost).
 
-## Troubleshooting tips
+Casa, trabalho e outros favoritos podem ser salvos sem cadastro. A preferência de tema, as linhas favoritas e os destinos recentes também ficam no dispositivo. Os dados de lugares são separados por usuário ou visitante, sem sincronização com outros navegadores ou dispositivos.
 
-- Lines page shows "No vehicles available":
-  - Check that `data.l[*].vs` exists in the backend response.
-  - Verify CORS and the `/lines/positions` endpoint status.
-- Stations map does not render or is clipped:
-  - Verify Leaflet loads via CDN and call `invalidateSize` after mount.
-  - Confirm `point1`/`point2` use the `lat,lng` format.
-- Profile has no user data:
-  - Check the token in `localStorage` and the `/auth/me` response.
+### Linhas de ônibus
 
-## Roadmap (ideas)
+`GET /lines/positions` fornece os dados de linhas e veículos. A tela mostra somente posições informadas pela SPTrans, com atualização manual e automática a cada 30 segundos enquanto a página estiver visível. Em falhas de atualização, a última consulta bem-sucedida continua identificada pelo horário de recebimento.
 
-- Sync Favorites/Recents with the backend per user.
-- Select a point on the map (Stations) to populate Add location.
-- Accessibility improvements and automated tests.
+É possível buscar número/terminal, ordenar, filtrar favoritas e abrir no mapa a posição de um veículo quando houver coordenadas válidas. As posições não fornecem previsão de chegada. Uma linha favorita aparece na lista quando a consulta informa dados para ela.
 
----
+### Mapa e trajetos
 
-Built with React + Vite and lots of coffee.
+O mapa usa Leaflet e tiles do OpenStreetMap, com marcadores de partida/destino e estados de carregamento/erro. O backend consulta GraphHopper por `GET /stations/route?point1=lat,lng&point2=lat,lng`.
+
+O perfil atual do backend é **carro**: a duração e o traçado são referências viárias, sem itinerário de ônibus, conexão entre linhas ou previsão de chegada. A interface apresenta essa informação junto ao planejamento. Integrar roteamento por transporte público é uma próxima etapa.
+
+### Conta
+
+`POST /auth/register` cria a conta e retorna o usuário, sem iniciar uma sessão. Após o cadastro, a interface abre o login com uma confirmação. Somente `POST /auth/login`, que retorna `{ token, user }`, salva o acesso.
+
+`GET /auth/me` confirma os dados exibidos no perfil. Sessões inválidas ou expiradas recebem um convite para entrar novamente. Sair limpa `token`, `user` e o antigo `passwordLength`; a interface não guarda nem registra senha ou seu comprimento. Os formulários permitem envio pelo teclado e alternância da visibilidade da senha.
+
+## Persistência local
+
+| Chave | Uso |
+| --- | --- |
+| `token`, `user` | Sessão JWT e perfil seguro retornados pelo backend. |
+| `busapp-theme` | Tema claro ou escuro; na ausência de preferência salva, usa o tema do sistema. |
+| `homeInfo_<id>`, `workInfo_<id>` | Atalhos de casa/trabalho. |
+| `favorites_<id>`, `recents_<id>` | Lugares favoritos e recentes. |
+| `favoriteLines_<id>` | Identificadores das linhas favoritas. |
+
+O sufixo é o ID da conta ou `anon` para visitantes. Leituras inválidas voltam a um estado vazio; o usuário recebe feedback quando o navegador impede uma gravação. O indicador offline explica que consultas, mapas e autenticação precisam de conexão. O aplicativo ainda não inclui cache de instalação/offline por service worker.
+
+## Estrutura
+
+```text
+src/
+  components/
+    AppLayout.jsx       # Navegação, área principal e indicador offline
+    AuthFrame.jsx       # Estrutura compartilhada de login/cadastro
+    CityIllustration.jsx
+    LocationInput.jsx   # Combobox com sugestões e teclado
+    TransitMap.jsx      # Leaflet, tiles e geometria do trajeto
+    ui.jsx              # Ícones, botões de tema, modal, skeleton e estados vazios
+  lib/
+    api.js              # Base da API, timeout e cancelamento
+    locations.js        # Catálogo, normalização e resolução de coordenadas
+    storage.js          # Persistência por usuário/visitante
+    theme.js            # Tema e assinatura de mudanças
+  pages/                # Páginas das rotas
+  styles/               # Estilos por área
+  App.jsx               # Rotas e carregamento sob demanda
+  App.css               # Layout e componentes comuns
+  index.css             # Tokens de design e estilos de base
+```
+
+`Header.jsx` e `Footer.jsx` permanecem como arquivos legados; o fluxo atual usa `AppLayout.jsx`.
+
+## Conferência e próximas integrações
+
+Antes de publicar, execute build/lint e confira as telas em celular e desktop, nos dois temas, com teclado e movimento reduzido. Valide também os estados vazios, falhas de rede, sessão expirada e serviços reais com o ambiente do backend.
+
+As próximas prioridades de produto são geocodificação de endereços, itinerários de transporte público e sincronização de lugares com a conta. Medições de Core Web Vitals e auditoria de acessibilidade no ambiente publicado completam a verificação de produção.

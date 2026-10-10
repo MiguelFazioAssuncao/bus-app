@@ -1,55 +1,31 @@
 # Bus App
 
-A complete public transit app with integration to the SPTrans (Olho Vivo) and GraphHopper APIs for route planning.
+Aplicativo de mobilidade para São Paulo com React + Vite no frontend e Express + PostgreSQL no backend. A interface prioriza planejamento, descoberta de destinos e consulta de posições de ônibus da SPTrans.
 
-## About the Project
+- Navegação em português, responsiva e acessível por teclado.
+- Temas claro/escuro com preferência salva.
+- Catálogo de locais, busca instantânea, favoritos e recentes no navegador.
+- Consulta de linhas com filtros, ordenação, paginação e tratamento de dados desatualizados.
+- Mapa OpenStreetMap com trajetos viários da GraphHopper.
+- Login, cadastro e perfil conectados aos endpoints existentes.
 
-Bus App is a modern solution to make public transportation easier. The app offers:
+**Limite de produto:** a GraphHopper está configurada com `profile: car`. Os trajetos calculados são para automóveis, não itinerários de ônibus nem previsões de chegada. Posições de veículos são fornecidas separadamente pela SPTrans.
 
-- **Real-time** vehicle position tracking
-- **Smart route planning**
-- **Preferences management** (home and work)
-- **Intuitive, responsive UI**
+## Desenvolvimento
 
-## Architecture
+```bash
+cd frontend
+npm ci
+npm run dev
+```
 
-The project is split into two main parts:
+O Vite encaminha `/api` ao backend em `http://localhost:3000`. Configure os serviços conforme [backend/README.md](backend/README.md). Para hospedar o frontend separadamente, use `VITE_API_URL` com a origem pública da API antes do build.
 
-### Backend (REST API)
-- **Node.js** with Express
-- **PostgreSQL** database
-- **Integration** with SPTrans and GraphHopper APIs
-- **JWT authentication**
+```bash
+npm run build
+npm run lint
+```
 
-### Frontend
+Documentação: [frontend](frontend/README.md), [diagnóstico e design system](frontend/docs/UX_DESIGN.md), [verificação da modernização](frontend/docs/VERIFICATION.md).
 
-React web interface that consumes the backend API and delivers the user experience.
-
-Technologies
-- React + Vite
-- React Router DOM
-- Tailwind CSS (dark theme)
-- Font Awesome (icons)
-- Leaflet + OpenStreetMap (map)
-
-Key features
-- Header with search field that opens Search; footer navigation (Directions, Stations, Lines)
-- Authentication (Login/Register) with redirect to Directions
-- UserProfile with data via `GET /auth/me` and logout
-- Directions with Home/Work and a modal to save user routes/preferences
-- Lines with real-time data from `/lines/positions` (filtering, pagination, auto-refresh)
-- Stations with route plotting (GraphHopper) and Leaflet map
-- Search with user favorites/recents (localStorage persistence) and an Add location modal
-
-Main routes
-- `/login`, `/register`, `/directions`, `/lines`, `/stations`, `/search`, `/profile`
-
-Scripts (in frontend/)
-- `npm install` - install dependencies
-- `npm run dev` - development (Vite)
-- `npm run build` - production build
-- `npm run preview` - preview the build
-
-Full docs
-- [Frontend documentation](./frontend/README.md)
-- [Backend documentation](./backend/README.md)
+As consultas públicas começam em `/directions`; `/search`, `/lines` e `/stations` não exigem login. Conta disponível em `/login`, `/register` e `/profile`.
