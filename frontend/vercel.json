@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!assets/|bus-icon.svg).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

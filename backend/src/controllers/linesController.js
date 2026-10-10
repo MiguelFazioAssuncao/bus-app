@@ -8,14 +8,16 @@ const BASE_URL = process.env.BASE_URL_SP;
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true
+  withCredentials: true,
+  timeout: 15000
 });
 
 let sessionCookies = "";
 
 export const authenticate = async () => {
   try {
-    const response = await axios.post(`${BASE_URL}/Login/Autenticar?token=${token}`);
+    if (!token || !BASE_URL) throw new Error("SPTrans não configurado");
+    const response = await axios.post(`${BASE_URL}/Login/Autenticar?token=${token}`, null, { timeout: 15000 });
     const setCookieHeader = response.headers["set-cookie"];
 
     if (setCookieHeader) {
@@ -24,7 +26,7 @@ export const authenticate = async () => {
 
     return true;
   } catch (err) {
-    res.status(500).json({ message: "Internal server error", error: err.message });
+    throw err;
   }
 };
 
@@ -39,6 +41,6 @@ export const getPositions = async (req, res) => {
         });
         res.status(200).json(response.data);
     } catch(err) {
-        res.status(500).json({ message: "Internal server error", error: err.message });
+        res.status(503).json({ message: "Dados da SPTrans indisponíveis. Verifique a configuração do serviço." });
     }
 }

@@ -8,6 +8,7 @@ const BASE_URL = process.env.GRAPH_HOPPER_BASE_URL;
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
+  timeout: 15000,
   params: {
     key: KEY,
   },
@@ -37,6 +38,8 @@ export const getRoute = async (req, res) => {
         });
     }
 
+    if (!KEY || !BASE_URL) return res.status(503).json({ message: "Serviço de rotas ainda não configurado." });
+
     let response;
     try {
       response = await axiosInstance.get(`/route`, {
@@ -57,7 +60,7 @@ export const getRoute = async (req, res) => {
             .join("&");
         },
       });
-      console.log("Full GraphHopper API response:", JSON.stringify(response.data, null, 2));
+
     } catch (apiErr) {
       console.error("Error calling GraphHopper:", apiErr?.response?.data || apiErr.message);
       return res.status(502).json({
