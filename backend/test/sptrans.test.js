@@ -14,6 +14,30 @@ test("rejects false authentication instead of claiming success or requesting pos
   assert.equal(queried, false);
 });
 
+test("accepts a textual true response from SPTrans", async () => {
+  const payload = { hr: "16:20", l: [] };
+  const service = createSptransService({ ...options, client: {
+    post: async () => ({ data: " true\n", status: 200, headers: { "set-cookie": "apiCredentials=session; Path=/" } }),
+    get: async () => ({ data: payload, status: 200 }),
+  } });
+  assert.equal(await service.getPositions(), payload);
+});
+
+test("rejects textual false authentication without requesting positions", async () => {
+  let queried = false;
+  const service = createSptransService({ ...options, client: {
+    post: async () => ({ data: "false", status: 200, headers: {} }),
+    get: async () => { queried = true; },
+  } });
+  await assert.rejects(service.getPositions(), (error) => {
+    assert.equal(error.code, "SPTRANS_AUTH_REJECTED");
+    assert.equal(error.authResponseType, "string");
+    assert.equal(error.authResponseResult, false);
+    return true;
+  });
+  assert.equal(queried, false);
+});
+
 test("sends session cookies without Set-Cookie attributes and preserves actual position data", async () => {
   const payload = { hr: "16:20", l: [{ c: "8000", vs: [{ p: "123" }] }] };
   const service = createSptransService({ ...options, client: {

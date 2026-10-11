@@ -12,6 +12,8 @@ export const getPositions = async (_req, res) => {
       code: error.code,
       step: error.step,
       upstreamStatus: error.upstreamStatus,
+      authResponseType: error.authResponseType,
+      authResponseResult: error.authResponseResult,
     });
     res.status(503).json({
       message: "Dados da SPTrans indisponíveis. Tente novamente em alguns instantes.",

@@ -11,6 +11,40 @@ export class SptransError extends Error {
   }
 }
 
+function parseAuthenticationResult(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  if (/^true$/i.test(trimmed)) return true;
+  if (/^false$/i.test(trimmed)) return false;
+
+  // Some upstream responses are JSON-encoded strings instead of bare booleans.
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (typeof parsed === "boolean") return parsed;
+    if (typeof parsed === "string" && /^(true|false)$/i.test(parsed.trim())) {
+      return parsed.trim().toLowerCase() === "true";
+    }
+  } catch {
+    // Keep unrecognized response bodies out of logs; diagnostics below record only their type.
+  }
+  return null;
+}
+
+function getAuthResponseDiagnostics(value) {
+  const authResponseType = Array.isArray(value)
+    ? "array"
+    : value === null
+      ? "null"
+      : typeof value;
+  const parsed = parseAuthenticationResult(value);
+  return {
+    authResponseType,
+    authResponseResult: parsed,
+  };
+}
+
 export function createSptransService({
   token = process.env.TOKEN_LINE,
   baseURL = process.env.BASE_URL_SP,
@@ -42,8 +76,11 @@ export function createSptransService({
       const response = await client.post(`${apiURL}/Login/Autenticar`, null, {
         params: { token: accessToken },
       });
-      if (response.data !== true) {
-        throw new SptransError("SPTRANS_AUTH_REJECTED", "authentication", response.status);
+      const authResult = parseAuthenticationResult(response.data);
+      if (authResult !== true) {
+        const error = new SptransError("SPTRANS_AUTH_REJECTED", "authentication", response.status);
+        Object.assign(error, getAuthResponseDiagnostics(response.data));
+        throw error;
       }
       const cookies = response.headers["set-cookie"];
       // Cookie sends only name=value pairs, never Set-Cookie attributes such as Path/HttpOnly.
