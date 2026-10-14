@@ -1,3 +1,7 @@
 .vercel
 .env*
 !.env.example
+
+# Local UI review artifacts; keep them out of the application repository.
+/frontend/docs/accessibility-audit.json
+/frontend/docs/preview-*.png

@@ -26,6 +26,6 @@ npm run build
 npm run lint
 ```
 
-Documentação: [frontend](frontend/README.md), [diagnóstico e design system](frontend/docs/UX_DESIGN.md), [verificação da modernização](frontend/docs/VERIFICATION.md).
+Documentação: [frontend](frontend/README.md) e [backend](backend/README.md).
 
 As consultas públicas começam em `/directions`; `/search`, `/lines` e `/stations` não exigem login. Conta disponível em `/login`, `/register` e `/profile`.

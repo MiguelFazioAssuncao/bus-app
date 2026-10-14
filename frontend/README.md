@@ -2,8 +2,6 @@
 
 Interface em português para explorar São Paulo, consultar posições de ônibus e organizar destinos. A modernização mantém o laranja da marca (`#FFA652`), com temas claro/escuro, navegação adaptada ao celular e acesso às consultas sem cadastro.
 
-O diagnóstico, o design system, a estrutura das páginas, as animações e as prioridades estão em [UX_DESIGN.md](docs/UX_DESIGN.md).
-
 ## Desenvolvimento
 
 Na pasta `frontend`, instale as dependências do lockfile:
