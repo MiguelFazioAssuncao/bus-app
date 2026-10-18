@@ -1,17 +1,17 @@
 # Bus App
 
-Aplicativo de mobilidade para São Paulo com React + Vite no frontend e Express + PostgreSQL no backend. A interface prioriza planejamento, descoberta de destinos e consulta de posições de ônibus da SPTrans.
+Mobility app for São Paulo with React + Vite on the frontend and Express + PostgreSQL on the backend. The interface focuses on trip planning, destination discovery, and bus positions from SPTrans.
 
-- Navegação em português, responsiva e acessível por teclado.
-- Temas claro/escuro com preferência salva.
-- Catálogo de locais, busca instantânea, favoritos e recentes no navegador.
-- Consulta de linhas com filtros, ordenação, paginação e tratamento de dados desatualizados.
-- Mapa OpenStreetMap com trajetos viários da GraphHopper.
-- Login, cadastro e perfil conectados aos endpoints existentes.
+- Responsive, keyboard-accessible navigation in Portuguese.
+- Light and dark themes with a saved preference.
+- Place catalog, instant search, favorites, and recent destinations stored in the browser.
+- Bus line lookup with filters, sorting, pagination, and stale data handling.
+- OpenStreetMap with road routes from GraphHopper.
+- Login, registration, and profile connected to the existing endpoints.
 
-**Limite de produto:** a GraphHopper está configurada com `profile: car`. Os trajetos calculados são para automóveis, não itinerários de ônibus nem previsões de chegada. Posições de veículos são fornecidas separadamente pela SPTrans.
+**Product limitation:** GraphHopper is configured with `profile: car`. Calculated routes are driving routes and do not provide bus itineraries or arrival predictions. Vehicle positions are supplied separately by SPTrans.
 
-## Desenvolvimento
+## Development
 
 ```bash
 cd frontend
@@ -19,13 +19,13 @@ npm ci
 npm run dev
 ```
 
-O Vite encaminha `/api` ao backend em `http://localhost:3000`. Configure os serviços conforme [backend/README.md](backend/README.md). Para hospedar o frontend separadamente, use `VITE_API_URL` com a origem pública da API antes do build.
+Vite forwards `/api` to the backend at `http://localhost:3000`. Configure the services as described in [backend/README.md](backend/README.md). To host the frontend separately, set `VITE_API_URL` to the public API origin before building.
 
 ```bash
 npm run build
 npm run lint
 ```
 
-Documentação: [frontend](frontend/README.md) e [backend](backend/README.md).
+Documentation: [frontend](frontend/README.md) and [backend](backend/README.md).
 
-As consultas públicas começam em `/directions`; `/search`, `/lines` e `/stations` não exigem login. Conta disponível em `/login`, `/register` e `/profile`.
+Public lookups start at `/directions`; `/search`, `/lines`, and `/stations` do not require login. Account pages are available at `/login`, `/register`, and `/profile`.

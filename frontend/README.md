@@ -1,125 +1,125 @@
 # Bus App — Frontend
 
-Interface em português para explorar São Paulo, consultar posições de ônibus e organizar destinos. A modernização mantém o laranja da marca (`#FFA652`), com temas claro/escuro, navegação adaptada ao celular e acesso às consultas sem cadastro.
+Portuguese interface for exploring São Paulo, checking bus positions, and organizing destinations. The updated design retains the brand orange (`#FFA652`), with light and dark themes, mobile navigation, and public lookups without registration.
 
-## Desenvolvimento
+## Development
 
-Na pasta `frontend`, instale as dependências do lockfile:
+In the `frontend` directory, install dependencies from the lockfile:
 
 ```sh
 npm ci
 ```
 
-Comandos disponíveis:
+Available commands:
 
 ```sh
-npm run dev      # Servidor Vite, normalmente em http://localhost:5173
-npm run build    # Gera a versão de produção em dist/
-npm run lint     # Verifica JavaScript/JSX e regras de React
-npm run preview # Serve o build para conferência local
+npm run dev     # Vite server, usually at http://localhost:5173
+npm run build   # Generate the production build in dist/
+npm run lint    # Check JavaScript/JSX and React rules
+npm run preview # Serve the build for local review
 ```
 
-A interface usa React 19, React Router e Vite. O design é composto por CSS com tokens, ícones SVG locais e ilustrações SVG. Telas secundárias carregam sob demanda; o Leaflet é carregado apenas na tela de mapa.
+The interface uses React 19, React Router, and Vite. The design uses CSS with tokens, local SVG icons, and SVG illustrations. Secondary screens load on demand; Leaflet loads only on the map screen.
 
-## API e ambientes
+## API and environments
 
-A base da API é definida em `src/lib/api.js`:
+The API base URL is defined in `src/lib/api.js`:
 
-- **Desenvolvimento:** a base padrão é `/api`. O proxy de `vite.config.js` encaminha `/api/auth/login`, por exemplo, para `http://localhost:3000/auth/login`.
-- **Produção:** configure um encaminhamento `/api` no servidor de hospedagem ou defina `VITE_API_URL` antes do build. Para uma API em outro domínio, configure também o CORS do backend.
+- **Development:** the default base is `/api`. The proxy in `vite.config.js` forwards `/api/auth/login`, for example, to `http://localhost:3000/auth/login`.
+- **Production:** configure `/api` forwarding on the hosting server or set `VITE_API_URL` before building. For an API on another domain, also configure backend CORS.
 
-Exemplo de `.env.local` quando a API usa um endereço diferente:
+Example `.env.local` when the API uses a different address:
 
 ```dotenv
-VITE_API_URL=https://api.exemplo.com
+VITE_API_URL=https://api.example.com
 ```
 
-Variáveis com prefixo `VITE_` entram no código público do frontend. As chaves de SPTrans, GraphHopper, banco e JWT ficam no backend. Consulte [backend/README.md](../backend/README.md) e [backend/.env.example](../backend/.env.example) para preparar os serviços.
+Variables prefixed with `VITE_` become part of the public frontend code. SPTrans, GraphHopper, database, and JWT keys belong on the backend. See [backend/README.md](../backend/README.md) and [backend/.env.example](../backend/.env.example) to prepare the services.
 
-As requisições têm prazo de 15 segundos, mensagens de erro em português e cancelamento quando a tela é abandonada. Consultas a serviços reais precisam do backend configurado; autenticação, SPTrans e GraphHopper não foram validados com credenciais reais nesta modernização.
+Requests have a 15-second timeout, Portuguese error messages, and cancellation when leaving the screen. Live service queries require a configured backend; authentication, SPTrans, and GraphHopper were not validated with real credentials during this update.
 
-## Páginas e navegação
+## Pages and navigation
 
-| Rota | Conteúdo |
+| Route | Content |
 | --- | --- |
-| `/` | Abre `/directions`, inclusive para visitantes. |
-| `/directions` | Visão geral, origem/destino, localização atual, atalhos de casa/trabalho e descobertas. |
-| `/search` | Busca no catálogo local, filtros por categoria, favoritos, recentes e cadastro de lugares. |
-| `/lines` | Linhas e sentidos com posições disponíveis na SPTrans, busca, ordenação, favoritas e paginação. |
-| `/stations` | Mapa, origem/destino, cálculo de trajeto e resultado com distância e duração. |
-| `/profile` | Dados da conta autenticada, tema e saída; visitantes recebem acesso a entrar/criar conta. |
-| `/login` | Entrada por e-mail e senha, com validação, feedback e acesso sem conta. |
-| `/register` | Cadastro de nome, e-mail e senha com pelo menos 8 caracteres. |
+| `/` | Opens `/directions`, including for visitors. |
+| `/directions` | Overview, origin/destination, current location, home/work shortcuts, and discoveries. |
+| `/search` | Local catalog search, category filters, favorites, recent destinations, and saved places. |
+| `/lines` | Lines and directions with available SPTrans positions, search, sorting, favorites, and pagination. |
+| `/stations` | Map, origin/destination, route calculation, and results with distance and duration. |
+| `/profile` | Authenticated account details, theme, and sign-out; visitors can access login/registration. |
+| `/login` | Email and password login, with validation, feedback, and access without an account. |
+| `/register` | Registration with a name, email, and password of at least 8 characters. |
 
-No desktop, a navegação fica na lateral. No celular, as quatro áreas principais aparecem na barra inferior. Foco visível, atalhos para o conteúdo, rótulos de formulário, sugestões navegáveis por teclado e modais com foco controlado apoiam a navegação acessível. As animações respeitam `prefers-reduced-motion`.
+On desktop, navigation appears in the sidebar. On mobile, the four main areas appear in the bottom bar. Visible focus, skip links, form labels, keyboard-accessible suggestions, and modals with managed focus support accessible navigation. Animations respect `prefers-reduced-motion`.
 
-## Comportamentos principais
+## Main behaviors
 
-### Destinos e busca
+### Destinations and search
 
-A busca oferece sugestões de um catálogo pequeno em `src/lib/locations.js` e dos lugares salvos neste navegador. Ela ignora acentos e diferenças entre maiúsculas e minúsculas. As coordenadas do catálogo são pontos aproximados de destinos; elas não representam uma base de paradas de ônibus.
+Search offers suggestions from a small catalog in `src/lib/locations.js` and places saved in this browser. Matching ignores accents and letter case. Catalog coordinates are approximate destination points; they do not represent a bus stop database.
 
-O frontend ainda não possui geocodificação de endereços. Para lugares fora do catálogo, informe latitude e longitude decimais, como `-23.5505,-46.6333`. A localização atual depende da permissão do navegador e de um contexto seguro (HTTPS ou localhost).
+The frontend does not yet support address geocoding. For places outside the catalog, enter decimal latitude and longitude, such as `-23.5505,-46.6333`. Current location requires browser permission and a secure context (HTTPS or localhost).
 
-Casa, trabalho e outros favoritos podem ser salvos sem cadastro. A preferência de tema, as linhas favoritas e os destinos recentes também ficam no dispositivo. Os dados de lugares são separados por usuário ou visitante, sem sincronização com outros navegadores ou dispositivos.
+Home, work, and other favorites can be saved without registration. Theme preferences, favorite lines, and recent destinations also stay on the device. Place data is separated by user or visitor, without synchronization across browsers or devices.
 
-### Linhas de ônibus
+### Bus lines
 
-`GET /lines/positions` fornece os dados de linhas e veículos. A tela mostra somente posições informadas pela SPTrans, com atualização manual e automática a cada 30 segundos enquanto a página estiver visível. Em falhas de atualização, a última consulta bem-sucedida continua identificada pelo horário de recebimento.
+`GET /lines/positions` provides line and vehicle data. The screen displays only positions reported by SPTrans, with manual updates and automatic updates every 30 seconds while the page is visible. When an update fails, the last successful result remains labeled with its receipt time.
 
-É possível buscar número/terminal, ordenar, filtrar favoritas e abrir no mapa a posição de um veículo quando houver coordenadas válidas. As posições não fornecem previsão de chegada. Uma linha favorita aparece na lista quando a consulta informa dados para ela.
+You can search by line number/terminal, sort, filter favorites, and open a vehicle position on the map when valid coordinates are available. Positions do not provide arrival predictions. A favorite line appears in the list when the query returns data for it.
 
-### Mapa e trajetos
+### Map and routes
 
-O mapa usa Leaflet e tiles do OpenStreetMap, com marcadores de partida/destino e estados de carregamento/erro. O backend consulta GraphHopper por `GET /stations/route?point1=lat,lng&point2=lat,lng`.
+The map uses Leaflet and OpenStreetMap tiles, with origin/destination markers and loading/error states. The backend queries GraphHopper through `GET /stations/route?point1=lat,lng&point2=lat,lng`.
 
-O perfil atual do backend é **carro**: a duração e o traçado são referências viárias, sem itinerário de ônibus, conexão entre linhas ou previsão de chegada. A interface apresenta essa informação junto ao planejamento. Integrar roteamento por transporte público é uma próxima etapa.
+The current backend profile is **car**: duration and route geometry are road references, without bus itineraries, line connections, or arrival predictions. The interface displays this information alongside trip planning. Public transit routing is a future integration.
 
-### Conta
+### Account
 
-`POST /auth/register` cria a conta e retorna o usuário, sem iniciar uma sessão. Após o cadastro, a interface abre o login com uma confirmação. Somente `POST /auth/login`, que retorna `{ token, user }`, salva o acesso.
+`POST /auth/register` creates the account and returns the user without starting a session. After registration, the interface opens the login screen with a confirmation. Only `POST /auth/login`, which returns `{ token, user }`, saves the session.
 
-`GET /auth/me` confirma os dados exibidos no perfil. Sessões inválidas ou expiradas recebem um convite para entrar novamente. Sair limpa `token`, `user` e o antigo `passwordLength`; a interface não guarda nem registra senha ou seu comprimento. Os formulários permitem envio pelo teclado e alternância da visibilidade da senha.
+`GET /auth/me` confirms the details displayed in the profile. Invalid or expired sessions prompt the user to sign in again. Signing out clears `token`, `user`, and the legacy `passwordLength`; the interface does not store or log passwords or their length. Forms support keyboard submission and toggling password visibility.
 
-## Persistência local
+## Local persistence
 
-| Chave | Uso |
+| Key | Purpose |
 | --- | --- |
-| `token`, `user` | Sessão JWT e perfil seguro retornados pelo backend. |
-| `busapp-theme` | Tema claro ou escuro; na ausência de preferência salva, usa o tema do sistema. |
-| `homeInfo_<id>`, `workInfo_<id>` | Atalhos de casa/trabalho. |
-| `favorites_<id>`, `recents_<id>` | Lugares favoritos e recentes. |
-| `favoriteLines_<id>` | Identificadores das linhas favoritas. |
+| `token`, `user` | JWT session and safe user profile returned by the backend. |
+| `busapp-theme` | Light or dark theme; defaults to the system theme when no preference is saved. |
+| `homeInfo_<id>`, `workInfo_<id>` | Home/work shortcuts. |
+| `favorites_<id>`, `recents_<id>` | Favorite and recent places. |
+| `favoriteLines_<id>` | Favorite line identifiers. |
 
-O sufixo é o ID da conta ou `anon` para visitantes. Leituras inválidas voltam a um estado vazio; o usuário recebe feedback quando o navegador impede uma gravação. O indicador offline explica que consultas, mapas e autenticação precisam de conexão. O aplicativo ainda não inclui cache de instalação/offline por service worker.
+The suffix is the account ID or `anon` for visitors. Invalid reads fall back to an empty state; the user receives feedback when the browser prevents a write. The offline indicator explains that lookups, maps, and authentication require a connection. The app does not yet include installation/offline caching through a service worker.
 
-## Estrutura
+## Structure
 
 ```text
 src/
   components/
-    AppLayout.jsx       # Navegação, área principal e indicador offline
-    AuthFrame.jsx       # Estrutura compartilhada de login/cadastro
+    AppLayout.jsx       # Navigation, main area, and offline indicator
+    AuthFrame.jsx       # Shared login/registration structure
     CityIllustration.jsx
-    LocationInput.jsx   # Combobox com sugestões e teclado
-    TransitMap.jsx      # Leaflet, tiles e geometria do trajeto
-    ui.jsx              # Ícones, botões de tema, modal, skeleton e estados vazios
+    LocationInput.jsx   # Combobox with suggestions and keyboard support
+    TransitMap.jsx      # Leaflet, tiles, and route geometry
+    ui.jsx              # Icons, theme buttons, modal, skeleton, and empty states
   lib/
-    api.js              # Base da API, timeout e cancelamento
-    locations.js        # Catálogo, normalização e resolução de coordenadas
-    storage.js          # Persistência por usuário/visitante
-    theme.js            # Tema e assinatura de mudanças
-  pages/                # Páginas das rotas
-  styles/               # Estilos por área
-  App.jsx               # Rotas e carregamento sob demanda
-  App.css               # Layout e componentes comuns
-  index.css             # Tokens de design e estilos de base
+    api.js              # API base URL, timeout, and cancellation
+    locations.js        # Catalog, normalization, and coordinate resolution
+    storage.js          # Persistence per user/visitor
+    theme.js            # Theme and change subscriptions
+  pages/                # Route pages
+  styles/               # Styles by area
+  App.jsx               # Routes and on-demand loading
+  App.css               # Layout and shared components
+  index.css             # Design tokens and base styles
 ```
 
-`Header.jsx` e `Footer.jsx` permanecem como arquivos legados; o fluxo atual usa `AppLayout.jsx`.
+`Header.jsx` and `Footer.jsx` remain as legacy files; the current flow uses `AppLayout.jsx`.
 
-## Conferência e próximas integrações
+## Review and upcoming integrations
 
-Antes de publicar, execute build/lint e confira as telas em celular e desktop, nos dois temas, com teclado e movimento reduzido. Valide também os estados vazios, falhas de rede, sessão expirada e serviços reais com o ambiente do backend.
+Before publishing, run build/lint and review the screens on mobile and desktop, in both themes, with keyboard navigation and reduced motion. Also validate empty states, network failures, expired sessions, and live services with the backend environment.
 
-As próximas prioridades de produto são geocodificação de endereços, itinerários de transporte público e sincronização de lugares com a conta. Medições de Core Web Vitals e auditoria de acessibilidade no ambiente publicado completam a verificação de produção.
+The next product priorities are address geocoding, public transit itineraries, and synchronizing places with the account. Core Web Vitals measurements and an accessibility audit of the deployed environment complete production verification.

@@ -90,26 +90,29 @@ This project is the backend for the Bus App transit application, built with Node
   ```json
   [
     {
-    "hr": "15:10",
-    "l": [
+      "hr": "15:10",
+      "l": [
         {
-            "c": "2008-10",
-            "cl": 33665,
-            "sl": 2,
-            "lt0": "CPTM ITAIM PAULISTA",
-            "lt1": "JD. NSA. SRA. DO CAMINHO",
-            "qv": 5,
-            "vs": [
-                {
-                    "p": 36060,
-                    "a": true,
-                    "ta": "2025-09-23T18:10:40Z",
-                    "py": -23.52118775,
-                    "px": -46.38765975,
-                    "sv": null,
-                    "is": null
-                }
+          "c": "2008-10",
+          "cl": 33665,
+          "sl": 2,
+          "lt0": "CPTM ITAIM PAULISTA",
+          "lt1": "JD. NSA. SRA. DO CAMINHO",
+          "qv": 5,
+          "vs": [
+            {
+              "p": 36060,
+              "a": true,
+              "ta": "2025-09-23T18:10:40Z",
+              "py": -23.52118775,
+              "px": -46.38765975,
+              "sv": null,
+              "is": null
+            }
+          ]
         }
+      ]
+    }
   ]
   ```
 
