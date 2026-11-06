@@ -1,29 +1,25 @@
 # Bus App
 
-Mobility app for São Paulo with React + Vite on the frontend and Express + PostgreSQL on the backend. The interface focuses on trip planning, destination discovery, and bus positions from SPTrans.
+Mobility app for São Paulo with React + Vite on the frontend and Express + PostgreSQL on the backend. The interface focuses on trip planning, live address search, destination discovery, and real-time bus positions and arrival predictions from SPTrans.
 
 - Responsive, keyboard-accessible navigation in Portuguese.
 - Light and dark themes with a saved preference.
-- Place catalog, instant search, favorites, and recent destinations stored in the browser.
-- Bus line lookup with filters, sorting, pagination, and stale data handling.
-- OpenStreetMap with road routes from GraphHopper.
-- Login, registration, and profile connected to the existing endpoints.
-
-**Product limitation:** GraphHopper is configured with `profile: car`. Calculated routes are driving routes and do not provide bus itineraries or arrival predictions. Vehicle positions are supplied separately by SPTrans.
+- Expanded São Paulo place catalog (18 landmarks/terminals) + live address geocoding and reverse geocoding via OpenStreetMap Nominatim (`/stations/geocode`, `/stations/reverse`).
+- Favorites, recent destinations, and Home/Work places with cloud synchronization (`/directions/preferences`).
+- Bus line lookup with live SPTrans vehicle positions, session reuse & caching, wheelchair-accessibility filter (`♿`), and stop arrival predictions (`/lines/:cl/predictions`).
+- Interactive OpenStreetMap with multi-modal road/walking/cycling routes (`car`, `foot`, `bike`), turn-by-turn steps, click-on-map origin/destination selection, live bus overlay on the map, and automatic OSRM/geometric fallback when GraphHopper is unavailable.
+- Cold-start resilience for Render + Vercel deployments (automatic `/health` warm-up, `/api/*` Vercel proxy rewrite, and `/api` + `/` dual route mounting on the backend).
 
 ## Development
 
-```bash
-cd frontend
-npm ci
-npm run dev
-```
-
-Vite forwards `/api` to the backend at `http://localhost:3000`. Configure the services as described in [backend/README.md](backend/README.md). To host the frontend separately, set `VITE_API_URL` to the public API origin before building.
+From the repository root:
 
 ```bash
-npm run build
-npm run lint
+npm run dev          # Starts Vite frontend
+npm run dev:backend  # Starts Express backend
+npm run build        # Builds production frontend
+npm run lint         # Runs ESLint on frontend
+npm test             # Runs Node test suite on backend
 ```
 
 Documentation: [frontend](frontend/README.md) and [backend](backend/README.md).
