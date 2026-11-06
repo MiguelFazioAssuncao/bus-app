@@ -1,38 +1,77 @@
 import User from "../models/User.js";
-import bcrypt from "bcrypt"
+import sequelize from "../database/client.js";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
+const getJwtSecret = () => process.env.JWT_SECRET || "default_secret";
+
+function normalizeEmail(email) {
+    return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
+async function findUserByEmail(email) {
+    const normalized = normalizeEmail(email);
+    if (!normalized) return null;
+    const direct = await User.findOne({ where: { email: normalized } });
+    if (direct) return direct;
+    try {
+        return await User.findOne({
+            where: sequelize.where(
+                sequelize.fn("LOWER", sequelize.col("email")),
+                normalized
+            ),
+        });
+    } catch {
+        return null;
+    }
+}
 
 export const register = async (req, res) => {
-    const { name, email, password } = req.body
+    const { name, email, password } = req.body || {};
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+    const normalizedEmail = normalizeEmail(email);
+
+    if (trimmedName.length < 2 || !normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        return res.status(400).json({ message: "Valid name and email are required" });
+    }
+    if (typeof password !== "string" || password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
 
     try {
-        const existingUser = await User.findOne({where: { email }});
+        const existingUser = await findUserByEmail(normalizedEmail);
         if (existingUser) {
-            return res.status(400).json({ message: "User already exists" });
-        };
+            return res.status(409).json({ message: "User already exists" });
+        }
 
-        const hashedPassword = await bcrypt.hash(password, 10)
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
-            name,
-            email,
-            password: hashedPassword
+            name: trimmedName,
+            email: normalizedEmail,
+            password: hashedPassword,
         });
 
         const safeUser = { id: user.id, name: user.name, email: user.email };
         res.status(201).json({ message: "User created successfully", user: safeUser });
     } catch (err) {
+        if (err?.name === "SequelizeUniqueConstraintError") {
+            return res.status(409).json({ message: "User already exists" });
+        }
         res.status(500).json({ message: "Internal server error", error: err.message });
     }
 };
 
 export const login = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail || typeof password !== "string" || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+    }
 
     try {
-        const user = await User.findOne({ where: { email } });
+        const user = await findUserByEmail(normalizedEmail);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -44,12 +83,12 @@ export const login = async (req, res) => {
 
         const token = jwt.sign(
             { id: user.id, email: user.email },
-            JWT_SECRET,
-            { expiresIn: "1h" }
+            getJwtSecret(),
+            { expiresIn: "7d" }
         );
 
         const safeUser = { id: user.id, name: user.name, email: user.email };
-        res.json({ message: "Login successful", token, user: safeUser }); 
+        res.json({ message: "Login successful", token, user: safeUser });
     } catch (err) {
         res.status(500).json({ message: "Internal server error", error: err.message });
     }
@@ -57,28 +96,28 @@ export const login = async (req, res) => {
 
 export const me = async (req, res) => {
     try {
-        const authHeader = req.headers.authorization || '';
-        const parts = authHeader.split(' ');
-        if (parts.length !== 2 || parts[0] !== 'Bearer') {
-            return res.status(401).json({ message: 'Missing or invalid Authorization header' });
+        const authHeader = req.headers.authorization || "";
+        const parts = authHeader.split(" ");
+        if (parts.length !== 2 || parts[0] !== "Bearer") {
+            return res.status(401).json({ message: "Missing or invalid Authorization header" });
         }
         const token = parts[1];
 
         let payload;
         try {
-            payload = jwt.verify(token, JWT_SECRET);
-        } catch (e) {
-            return res.status(401).json({ message: 'Invalid or expired token' });
+            payload = jwt.verify(token, getJwtSecret());
+        } catch {
+            return res.status(401).json({ message: "Invalid or expired token" });
         }
 
         const user = await User.findOne({ where: { id: payload.id } });
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: "User not found" });
         }
 
         const safeUser = { id: user.id, name: user.name, email: user.email };
         res.json({ user: safeUser });
     } catch (err) {
-        res.status(500).json({ message: 'Internal server error', error: err.message });
+        res.status(500).json({ message: "Internal server error", error: err.message });
     }
 };

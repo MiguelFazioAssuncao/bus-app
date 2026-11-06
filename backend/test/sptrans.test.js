@@ -83,3 +83,97 @@ test("supports a valid empty position snapshot", async () => {
   } });
   assert.deepEqual(await service.getPositions(), { hr: "16:20", l: [] });
 });
+
+test("reuses session cookie and caches positions snapshot when configured", async () => {
+  let authCalls = 0;
+  let getCalls = 0;
+  const payload = { hr: "16:25", l: [{ c: "2013-10", cl: 33667, vs: [] }] };
+  const service = createSptransService({
+    ...options,
+    cacheTtlMs: 5000,
+    sessionTtlMs: 5000,
+    client: {
+      post: async () => {
+        authCalls += 1;
+        return { data: true, status: 200, headers: { "set-cookie": "apiCredentials=s1; Path=/" } };
+      },
+      get: async () => {
+        getCalls += 1;
+        return { data: payload, status: 200 };
+      },
+    },
+  });
+
+  const first = await service.getPositions();
+  const second = await service.getPositions();
+  assert.equal(first, payload);
+  assert.equal(second, payload);
+  assert.equal(authCalls, 1);
+  assert.equal(getCalls, 1);
+});
+
+test("re-authenticates when cached session cookie receives 401", async () => {
+  let authCalls = 0;
+  let getCalls = 0;
+  const payload = { hr: "16:30", l: [] };
+  const service = createSptransService({
+    ...options,
+    sessionTtlMs: 60000,
+    client: {
+      post: async () => {
+        authCalls += 1;
+        return {
+          data: true,
+          status: 200,
+          headers: { "set-cookie": `apiCredentials=s${authCalls}; Path=/` },
+        };
+      },
+      get: async (_url, config) => {
+        getCalls += 1;
+        if (getCalls === 1) {
+          throw Object.assign(new Error("Unauthorized"), { response: { status: 401 } });
+        }
+        assert.equal(config.headers.Cookie, "apiCredentials=s2");
+        return { data: payload, status: 200 };
+      },
+    },
+  });
+
+  const result = await service.getPositions();
+  assert.deepEqual(result, payload);
+  assert.equal(authCalls, 2);
+  assert.equal(getCalls, 2);
+});
+
+test("fetches line predictions and stops", async () => {
+  const service = createSptransService({
+    ...options,
+    client: {
+      post: async () => ({
+        data: true,
+        status: 200,
+        headers: { "set-cookie": "apiCredentials=session; Path=/" },
+      }),
+      get: async (url) => {
+        if (url.endsWith("/Previsao/Linha")) {
+          return {
+            data: {
+              hr: "16:35",
+              ps: [{ cp: 100, np: "PARADA CENTRAL", py: -23.55, px: -46.63, vs: [{ p: "11001", t: "16:38", a: true }] }],
+            },
+            status: 200,
+          };
+        }
+        return {
+          data: [{ cp: 100, np: "PARADA CENTRAL", ed: "AV PAULISTA", py: -23.55, px: -46.63 }],
+          status: 200,
+        };
+      },
+    },
+  });
+
+  const predictions = await service.getLinePredictions(33667);
+  assert.equal(predictions.cl, 33667);
+  assert.equal(predictions.ps.length, 1);
+  assert.equal(predictions.stops.length, 1);
+});
