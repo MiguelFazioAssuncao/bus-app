@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: bus-app-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_SSL
+        value: "true"
+      - key: BASE_URL_SP
+        value: https://api.olhovivo.sptrans.com.br/v2.1
+      - key: GRAPH_HOPPER_BASE_URL
+        value: https://graphhopper.com/api/1
+      - key: CORS_ORIGIN
+        value: https://bus-app-neon.vercel.app
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: TOKEN_LINE
+        sync: false
+      - key: GRAPH_HOPPER_API_KEY
+        sync: false

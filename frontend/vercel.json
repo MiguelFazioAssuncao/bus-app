@@ -1,7 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets/|bus-icon.svg).*)",
+      "source": "/api/:path*",
+      "destination": "https://bus-app-api-0nql.onrender.com/:path*"
+    },
+    {
+      "source": "/((?!api/|assets/|bus-icon\\.svg|favicon\\.ico|bus1\\.png|bus2\\.png).*)",
       "destination": "/index.html"
     }
   ]

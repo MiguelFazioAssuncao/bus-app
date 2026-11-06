@@ -1,0 +1,14 @@
+{
+  "name": "bus-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Bus App — Mobilidade urbana em São Paulo (Frontend React/Vite + Backend Express/PostgreSQL)",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build",
+    "lint": "npm --prefix frontend run lint",
+    "test": "npm --prefix backend test",
+    "start": "npm --prefix backend start"
+  }
+}
