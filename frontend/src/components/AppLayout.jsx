@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Icon, ThemeToggle } from "./ui.jsx";
 import { readStorage } from "../lib/storage.js";
+import { getApiStatus, subscribeApiStatus, warmupApi } from "../lib/api.js";
 
 const navigation = [
   { to: "/directions", icon: "route", label: "Visão geral" },
@@ -13,6 +14,7 @@ export default function AppLayout({ children }) {
   const location = useLocation();
   const main = useRef(null);
   const [online, setOnline] = useState(navigator.onLine);
+  const apiStatus = useSyncExternalStore(subscribeApiStatus, getApiStatus);
   const [session, setSession] = useState(() => {
     try {
       return {
@@ -26,6 +28,9 @@ export default function AppLayout({ children }) {
   const { user, authenticated } = session;
   const displayName =
     typeof user?.name === "string" ? user.name.split(" ")[0] : "Minha conta";
+  useEffect(() => {
+    warmupApi();
+  }, []);
   useEffect(() => {
     const update = () => {
       try {
@@ -153,6 +158,13 @@ export default function AppLayout({ children }) {
             <Icon name="info" size={17} /> Você está offline. Nesta sessão, os
             locais já carregados continuam disponíveis. Consultas precisam de
             conexão.
+          </div>
+        )}
+        {online && apiStatus === "waking" && (
+          <div className="offline-banner waking-banner" role="status">
+            <Icon name="refresh" size={17} className="is-spinning" /> Conectando
+            ao servidor em nuvem… A primeira consulta após inatividade pode
+            levar alguns segundos.
           </div>
         )}
         <main

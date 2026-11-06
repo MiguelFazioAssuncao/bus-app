@@ -540,6 +540,15 @@
   color: var(--accent);
   background: var(--brand-soft);
 }
+.waking-banner {
+  border-bottom: 1px solid var(--border);
+}
+.location-suggestion-loading {
+  cursor: default !important;
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 40px !important;
+}
 .overview-heading {
   display: flex;
   align-items: center;

@@ -1,10 +1,22 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import LocationInput from "../components/LocationInput.jsx";
 import CityIllustration from "../components/CityIllustration.jsx";
 import { Icon, Modal } from "../components/ui.jsx";
-import { locations, resolveLocation } from "../lib/locations.js";
-import { readStorage, writeStorage, userKey } from "../lib/storage.js";
+import {
+  locations,
+  resolveLocation,
+  reverseGeocodeCoordinates,
+  searchAddressSuggestions,
+} from "../lib/locations.js";
+import {
+  getAuthSession,
+  pullPreferencesFromCloud,
+  pushPreferencesToCloud,
+  readStorage,
+  writeStorage,
+  userKey,
+} from "../lib/storage.js";
 import useReveal from "../lib/useReveal.js";
 
 function initialPlace(value) {
@@ -26,6 +38,7 @@ export default function Directions() {
   );
   const [errors, setErrors] = useState({});
   const [locating, setLocating] = useState(false);
+  const [planning, setPlanning] = useState(false);
   const [notice, setNotice] = useState("");
   const [saved, setSaved] = useState(() => ({
     home: readStorage(userKey("homeInfo"), null),
@@ -36,26 +49,58 @@ export default function Directions() {
   const [savedPlace, setSavedPlace] = useState("");
   const [saveError, setSaveError] = useState("");
 
-  function plan(event) {
+  useEffect(() => {
+    let active = true;
+    pullPreferencesFromCloud().then((synced) => {
+      if (!active || !synced) return;
+      setSaved({
+        home: synced.home || readStorage(userKey("homeInfo"), null),
+        work: synced.work || readStorage(userKey("workInfo"), null),
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function plan(event) {
     event.preventDefault();
-    const from = resolveLocation(origin),
-      to = resolveLocation(destination);
-    const next = {};
-    if (!from)
-      next.origin = "Escolha um local sugerido ou informe latitude,longitude.";
-    if (!to)
-      next.destination =
-        "Escolha um local sugerido ou informe latitude,longitude.";
-    if (from && to && from.lat === to.lat && from.lng === to.lng)
-      next.destination = "Escolha um destino diferente do ponto de partida.";
-    setErrors(next);
-    if (Object.keys(next).length) {
-      document.getElementById(next.origin ? "origin" : "destination")?.focus();
-      return;
+    setPlanning(true);
+    try {
+      let from = resolveLocation(origin);
+      let to = resolveLocation(destination);
+      if (!from && origin.trim().length >= 3) {
+        const matches = await searchAddressSuggestions(origin.trim(), {
+          limit: 1,
+        });
+        if (matches[0]) from = matches[0];
+      }
+      if (!to && destination.trim().length >= 3) {
+        const matches = await searchAddressSuggestions(destination.trim(), {
+          limit: 1,
+        });
+        if (matches[0]) to = matches[0];
+      }
+      const next = {};
+      if (!from)
+        next.origin =
+          "Escolha um local sugerido, digite um endereço em SP ou informe latitude,longitude.";
+      if (!to)
+        next.destination =
+          "Escolha um local sugerido, digite um endereço em SP ou informe latitude,longitude.";
+      if (from && to && from.lat === to.lat && from.lng === to.lng)
+        next.destination = "Escolha um destino diferente do ponto de partida.";
+      setErrors(next);
+      if (Object.keys(next).length) {
+        document.getElementById(next.origin ? "origin" : "destination")?.focus();
+        return;
+      }
+      navigate(
+        `/stations?${new URLSearchParams({ from: `${from.lat},${from.lng}`, to: `${to.lat},${to.lng}`, fromName: from.name, toName: to.name, plan: "1" })}`,
+      );
+    } finally {
+      setPlanning(false);
     }
-    navigate(
-      `/stations?${new URLSearchParams({ from: `${from.lat},${from.lng}`, to: `${to.lat},${to.lng}`, fromName: from.name, toName: to.name, plan: "1" })}`,
-    );
   }
   function locate() {
     if (!navigator.geolocation) {
@@ -68,12 +113,17 @@ export default function Directions() {
     setNotice("");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setOrigin(
-          `${position.coords.latitude.toFixed(6)},${position.coords.longitude.toFixed(6)}`,
-        );
+        const lat = Number(position.coords.latitude.toFixed(6));
+        const lng = Number(position.coords.longitude.toFixed(6));
+        setOrigin(`${lat},${lng}`);
         setErrors((previous) => ({ ...previous, origin: undefined }));
         setLocating(false);
         setNotice("Localização definida como ponto de partida.");
+        reverseGeocodeCoordinates(lat, lng).then((place) => {
+          if (place?.name) {
+            setOrigin(place.name);
+          }
+        });
       },
       () => {
         setLocating(false);
@@ -91,12 +141,18 @@ export default function Directions() {
     setSavedPlace(place ? `${place.lat},${place.lng}` : "");
     setSaveError("");
   }
-  function save(event) {
+  async function save(event) {
     event.preventDefault();
-    const place = resolveLocation(savedPlace);
+    let place = resolveLocation(savedPlace);
+    if (!place && savedPlace.trim().length >= 3) {
+      const matches = await searchAddressSuggestions(savedPlace.trim(), {
+        limit: 1,
+      });
+      if (matches[0]) place = matches[0];
+    }
     if (!savedName.trim() || !place) {
       setSaveError(
-        "Informe um nome e escolha um local sugerido ou coordenadas válidas.",
+        "Informe um nome e escolha um endereço ou coordenadas válidas.",
       );
       return;
     }
@@ -108,15 +164,27 @@ export default function Directions() {
       return;
     }
     const favorites = readStorage(userKey("favorites"), []);
-    writeStorage(userKey("favorites"), [
+    const nextFavorites = [
       next,
       ...(Array.isArray(favorites)
         ? favorites.filter((item) => item.id !== next.id)
         : []),
-    ]);
-    setSaved((previous) => ({ ...previous, [editing]: next }));
+    ];
+    writeStorage(userKey("favorites"), nextFavorites);
+    const updatedSaved = { ...saved, [editing]: next };
+    setSaved(updatedSaved);
     setEditing(null);
-    setNotice(`${next.name} salvo neste dispositivo.`);
+    const { token } = getAuthSession();
+    if (token) {
+      pushPreferencesToCloud({
+        home: updatedSaved.home,
+        work: updatedSaved.work,
+        favorites: nextFavorites,
+      });
+      setNotice(`${next.name} salvo neste dispositivo e sincronizado na conta.`);
+    } else {
+      setNotice(`${next.name} salvo neste dispositivo.`);
+    }
   }
   return (
     <div className="overview-page" ref={overview}>
@@ -206,14 +274,16 @@ export default function Directions() {
             <button
               className="button button-primary planner-submit"
               type="submit"
+              disabled={planning}
             >
-              Explorar trajeto <Icon name="arrow-right" size={19} />
+              {planning ? "Buscando endereço…" : "Explorar trajeto"}{" "}
+              <Icon name="arrow-right" size={19} />
             </button>
           </form>
           <div className="planner-footnote">
             <Icon name="info" size={15} />
             <span>
-              Locais sugeridos de São Paulo. Você também pode usar coordenadas.
+              Locais sugeridos e busca de endereços em São Paulo ou coordenadas.
             </span>
           </div>
         </section>

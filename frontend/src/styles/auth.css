@@ -414,6 +414,32 @@
   display: block;
   font-size: 11px;
 }
+.profile-saved-summary {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.profile-saved-summary strong {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.profile-saved-summary span {
+  display: block;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.profile-sync-row {
+  margin-top: 18px;
+  display: grid;
+  gap: 8px;
+}
+.profile-sync-row .button {
+  width: 100%;
+}
 .profile-quick-links {
   display: flex;
   flex-direction: column;

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { EmptyState, Icon, PageHeading, Skeleton } from "../components/ui.jsx";
+import {
+  EmptyState,
+  Icon,
+  Modal,
+  PageHeading,
+  Skeleton,
+} from "../components/ui.jsx";
 import { api } from "../lib/api.js";
 import { normalize } from "../lib/locations.js";
 import { readStorage, userKey, writeStorage } from "../lib/storage.js";
@@ -15,13 +21,21 @@ function parseLines(data) {
     throw new Error("Resposta de posições indisponível.");
   return data.l
     .filter((line) => line && typeof line === "object")
-    .map((line, index) => ({
-      id: String(line.cl ?? `${line.c || "line"}-${line.sl || index}`),
-      code: String(line.c || "Linha sem código"),
-      from: String(line.lt0 || "Terminal não informado"),
-      to: String(line.lt1 || "Terminal não informado"),
-      vehicles: Array.isArray(line.vs) ? line.vs : [],
-    }));
+    .map((line, index) => {
+      const vehicles = Array.isArray(line.vs) ? line.vs : [];
+      const accessibleCount = vehicles.filter(
+        (vehicle) => vehicle && vehicle.a === true,
+      ).length;
+      return {
+        id: String(line.cl ?? `${line.c || "line"}-${line.sl || index}`),
+        cl: line.cl ?? null,
+        code: String(line.c || "Linha sem código"),
+        from: String(line.lt0 || "Terminal não informado"),
+        to: String(line.lt1 || "Terminal não informado"),
+        vehicles,
+        accessibleCount,
+      };
+    });
 }
 function vehicleCoordinates(vehicle) {
   if (!vehicle || typeof vehicle !== "object") return null;
@@ -46,6 +60,15 @@ function vehicleCoordinates(vehicle) {
     return null;
   return `${lat},${lng}`;
 }
+function formatVehicleTimestamp(ta) {
+  if (!ta) return "Horário não informado";
+  const parsed = new Date(ta);
+  if (Number.isNaN(parsed.getTime())) return String(ta);
+  return parsed.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function Lines() {
   const [items, setItems] = useState([]);
@@ -55,8 +78,13 @@ export default function Lines() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("code");
   const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const [onlyAccessible, setOnlyAccessible] = useState(false);
   const [page, setPage] = useState(1);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [selectedLine, setSelectedLine] = useState(null);
+  const [predictionsData, setPredictionsData] = useState(null);
+  const [predictionsLoading, setPredictionsLoading] = useState(false);
+  const [predictionsError, setPredictionsError] = useState(false);
   const [storageKey] = useState(() => userKey("favoriteLines"));
   const [favorites, setFavorites] = useState(() => {
     const stored = readStorage(userKey("favoriteLines"), []);
@@ -116,7 +144,8 @@ export default function Lines() {
         (item) =>
           (!term ||
             normalize(`${item.code} ${item.from} ${item.to}`).includes(term)) &&
-          (!onlyFavorites || favorites.includes(item.id)),
+          (!onlyFavorites || favorites.includes(item.id)) &&
+          (!onlyAccessible || item.accessibleCount > 0),
       )
       .sort((a, b) =>
         sort === "vehicles"
@@ -125,7 +154,7 @@ export default function Lines() {
             ? a.from.localeCompare(b.from, "pt-BR")
             : a.code.localeCompare(b.code, "pt-BR", { numeric: true }),
       );
-  }, [favorites, items, onlyFavorites, query, sort]);
+  }, [favorites, items, onlyAccessible, onlyFavorites, query, sort]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const paginated = filtered.slice(
@@ -146,7 +175,25 @@ export default function Lines() {
   const resetFilters = () => {
     setQuery("");
     setOnlyFavorites(false);
+    setOnlyAccessible(false);
     setPage(1);
+  };
+  const openLineDetails = async (item) => {
+    setSelectedLine(item);
+    setPredictionsData(null);
+    setPredictionsError(false);
+    if (!item.cl) return;
+    setPredictionsLoading(true);
+    try {
+      const data = await api(
+        `/lines/${encodeURIComponent(item.cl)}/predictions`,
+      );
+      setPredictionsData(data);
+    } catch {
+      setPredictionsError(true);
+    } finally {
+      setPredictionsLoading(false);
+    }
   };
 
   return (
@@ -237,6 +284,16 @@ export default function Lines() {
           >
             <Icon name="star" size={17} /> Favoritas
           </button>
+          <button
+            className={`button lines-favorite-filter ${onlyAccessible ? "is-active" : "button-secondary"}`}
+            aria-pressed={onlyAccessible}
+            onClick={() => {
+              setOnlyAccessible((current) => !current);
+              setPage(1);
+            }}
+          >
+            ♿ Acessíveis
+          </button>
           <div className="lines-sort-field">
             <Icon name="sort" size={17} />
             <label htmlFor="line-sort" className="sr-only">
@@ -325,12 +382,27 @@ export default function Lines() {
               const coordinates = item.vehicles
                 .map(vehicleCoordinates)
                 .find(Boolean);
+              const mapParams = new URLSearchParams();
+              if (coordinates) mapParams.set("from", coordinates);
+              if (item.code) mapParams.set("line", item.code);
+              if (item.cl !== null && item.cl !== undefined)
+                mapParams.set("cl", String(item.cl));
               return (
                 <article className="card line-card" key={item.id}>
                   <div className="line-card-header">
-                    <span className="line-code">
-                      <Icon name="bus" size={18} /> {item.code}
-                    </span>
+                    <div className="line-card-badges">
+                      <span className="line-code">
+                        <Icon name="bus" size={18} /> {item.code}
+                      </span>
+                      {item.accessibleCount > 0 && (
+                        <span
+                          className="line-accessible-badge"
+                          title={`${item.accessibleCount} ${item.accessibleCount === 1 ? "veículo acessível" : "veículos acessíveis"}`}
+                        >
+                          ♿ {item.accessibleCount}
+                        </span>
+                      )}
+                    </div>
                     <button
                       className={`icon-button line-save ${saved ? "is-saved" : ""}`}
                       onClick={() => toggleFavorite(item.id)}
@@ -360,16 +432,25 @@ export default function Lines() {
                         ? "veículo localizado"
                         : "veículos localizados"}
                     </span>
-                    {coordinates && (
-                      <Link
-                        to={`/stations?${new URLSearchParams({ from: coordinates })}`}
-                        className="line-map-link"
-                        aria-label={`Ver localização de um veículo da linha ${item.code} no mapa`}
+                    <div className="line-card-actions">
+                      <button
+                        type="button"
+                        className="line-details-button"
+                        onClick={() => openLineDetails(item)}
                       >
-                        <Icon name="map" size={16} /> Ver no mapa{" "}
-                        <Icon name="arrow-up-right" size={14} />
-                      </Link>
-                    )}
+                        <Icon name="clock" size={15} /> Detalhes e previsão
+                      </button>
+                      {coordinates && (
+                        <Link
+                          to={`/stations?${mapParams}`}
+                          className="line-map-link"
+                          aria-label={`Ver localização dos veículos da linha ${item.code} no mapa`}
+                        >
+                          <Icon name="map" size={16} /> Ver no mapa{" "}
+                          <Icon name="arrow-up-right" size={14} />
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </article>
               );
@@ -404,7 +485,7 @@ export default function Lines() {
                 ? "Vamos tentar de novo?"
                 : onlyFavorites
                   ? "Suas favoritas ficam aqui"
-                  : query
+                  : query || onlyAccessible
                     ? "Nenhuma linha encontrada"
                     : "Nenhuma posição recebida"
             }
@@ -413,8 +494,8 @@ export default function Lines() {
                 ? "A consulta está temporariamente indisponível. Você pode tentar novamente a qualquer momento."
                 : onlyFavorites
                   ? "Marque a estrela de uma linha para encontrá-la mais rápido. As favoritas aparecem quando a SPTrans informa posições para elas."
-                  : query
-                    ? "Tente outro número ou nome de terminal."
+                  : query || onlyAccessible
+                    ? "Tente outro número, nome de terminal ou limpe os filtros ativos."
                     : "A SPTrans não informou posições de veículos nesta consulta."
             }
           >
@@ -427,7 +508,7 @@ export default function Lines() {
                 <Icon name="refresh" size={17} /> Consultar novamente
               </button>
             ) : (
-              (query || onlyFavorites) && (
+              (query || onlyFavorites || onlyAccessible) && (
                 <button
                   className="button button-secondary"
                   onClick={resetFilters}
@@ -440,10 +521,150 @@ export default function Lines() {
         </div>
       )}
       <p className="lines-data-note">
-        <Icon name="info" size={16} /> As posições indicam veículos localizados,
-        sem previsão de chegada. Os dois terminais identificam o trajeto
-        informado.
+        <Icon name="info" size={16} /> As posições indicam veículos localizados
+        pela SPTrans. Clique em &ldquo;Detalhes e previsão&rdquo; para consultar
+        prefixos e previsões nas paradas.
       </p>
+      {selectedLine && (
+        <Modal
+          title={`Linha ${selectedLine.code}`}
+          onClose={() => setSelectedLine(null)}
+        >
+          <div className="line-modal-body">
+            <p className="muted line-modal-subtitle">
+              {selectedLine.from} → {selectedLine.to}
+            </p>
+            <div className="line-modal-stats">
+              <span className="badge">
+                <Icon name="bus" size={14} /> {selectedLine.vehicles.length}{" "}
+                {selectedLine.vehicles.length === 1
+                  ? "veículo ativo"
+                  : "veículos ativos"}
+              </span>
+              {selectedLine.accessibleCount > 0 && (
+                <span className="badge">
+                  ♿ {selectedLine.accessibleCount}{" "}
+                  {selectedLine.accessibleCount === 1
+                    ? "acessível"
+                    : "acessíveis"}
+                </span>
+              )}
+            </div>
+            <section className="line-modal-section">
+              <h3>Veículos em operação agora</h3>
+              {selectedLine.vehicles.length ? (
+                <ul className="line-modal-list">
+                  {selectedLine.vehicles.slice(0, 8).map((vehicle, index) => {
+                    const coords = vehicleCoordinates(vehicle);
+                    const params = new URLSearchParams();
+                    if (coords) params.set("from", coords);
+                    params.set("line", selectedLine.code);
+                    if (selectedLine.cl !== null)
+                      params.set("cl", String(selectedLine.cl));
+                    return (
+                      <li
+                        key={`${vehicle.p || index}-${index}`}
+                        className="line-modal-item"
+                      >
+                        <div>
+                          <strong>Prefixo {vehicle.p || "—"}</strong>
+                          <small className="muted">
+                            Atualizado às {formatVehicleTimestamp(vehicle.ta)}
+                            {vehicle.a ? " · ♿ Acessível" : ""}
+                          </small>
+                        </div>
+                        {coords && (
+                          <Link
+                            to={`/stations?${params}`}
+                            className="line-map-link"
+                            onClick={() => setSelectedLine(null)}
+                          >
+                            Mapa <Icon name="arrow-up-right" size={13} />
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="muted">
+                  Nenhum veículo localizado neste momento.
+                </p>
+              )}
+            </section>
+            <section className="line-modal-section">
+              <h3>Paradas e previsão de chegada (SPTrans)</h3>
+              {predictionsLoading ? (
+                <p className="muted" role="status">
+                  Consultando previsões em tempo real…
+                </p>
+              ) : predictionsError ? (
+                <p className="muted">
+                  Não foi possível carregar as previsões de parada agora.
+                </p>
+              ) : Array.isArray(predictionsData?.ps) &&
+                predictionsData.ps.length > 0 ? (
+                <ul className="line-modal-list">
+                  {predictionsData.ps.slice(0, 10).map((stop, index) => {
+                    const nextBus = Array.isArray(stop.vs) ? stop.vs[0] : null;
+                    return (
+                      <li
+                        key={stop.cp || index}
+                        className="line-modal-item"
+                      >
+                        <div>
+                          <strong>
+                            {stop.np || `Parada #${stop.cp || index + 1}`}
+                          </strong>
+                          <small className="muted">
+                            {nextBus
+                              ? `Próximo ônibus (${nextBus.p || "—"}) previsto às ${nextBus.t || "—"}${nextBus.a ? " · ♿" : ""}`
+                              : "Sem previsão imediata informada"}
+                          </small>
+                        </div>
+                        {stop.py && stop.px && (
+                          <Link
+                            to={`/stations?${new URLSearchParams({
+                              from: `${stop.py},${stop.px}`,
+                              fromName: stop.np || "Parada de ônibus",
+                              line: selectedLine.code,
+                            })}`}
+                            className="line-map-link"
+                            onClick={() => setSelectedLine(null)}
+                          >
+                            Ver parada <Icon name="arrow-up-right" size={13} />
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : Array.isArray(predictionsData?.stops) &&
+                predictionsData.stops.length > 0 ? (
+                <ul className="line-modal-list">
+                  {predictionsData.stops.slice(0, 10).map((stop, index) => (
+                    <li key={stop.cp || index} className="line-modal-item">
+                      <div>
+                        <strong>
+                          {stop.np || `Parada #${stop.cp || index + 1}`}
+                        </strong>
+                        <small className="muted">
+                          {stop.ed || "Endereço da parada"}
+                        </small>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">
+                  A SPTrans não retornou paradas com previsão ativa para este
+                  sentido agora.
+                </p>
+              )}
+            </section>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

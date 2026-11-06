@@ -108,22 +108,62 @@ function addPlaceMarker(L, group, letter, label, place) {
     .addTo(group);
 }
 
-export default function TransitMap({ route, focusLocation }) {
+function addBusMarker(L, group, bus) {
+  const icon = L.divIcon({
+    className: "transit-marker",
+    html: `<span class="transit-marker-dot transit-marker-bus" title="Ônibus ${bus.lineCode || ""} · Prefixo ${bus.prefix}">🚌</span>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -18],
+  });
+  const element = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = bus.lineCode
+    ? `Linha ${bus.lineCode} · Veículo #${bus.prefix}`
+    : `Veículo #${bus.prefix}`;
+  element.appendChild(title);
+  const meta = document.createElement("p");
+  const parts = [];
+  if (bus.destination) parts.push(`Sentido: ${bus.destination}`);
+  if (bus.accessible) parts.push("♿ Acessível");
+  if (bus.updatedAt) parts.push(`Atualizado: ${bus.updatedAt}`);
+  meta.textContent = parts.join(" · ") || "Posição em tempo real SPTrans";
+  element.appendChild(meta);
+
+  return L.marker([bus.lat, bus.lng], {
+    icon,
+    title: title.textContent,
+    alt: title.textContent,
+    keyboard: true,
+  })
+    .bindPopup(element)
+    .addTo(group);
+}
+
+export default function TransitMap({
+  route,
+  focusLocation,
+  vehicles = [],
+  onMapClick,
+}) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
+  const onMapClickRef = useRef(onMapClick);
   const [phase, setPhase] = useState("loading");
   const [attempt, setAttempt] = useState(0);
   const [mapVersion, setMapVersion] = useState(0);
 
   useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
+
+  useEffect(() => {
     let disposed = false;
     let map;
     let observer;
-    let tileTimer;
-    let loadedTiles = 0;
-    let failedTiles = 0;
+    let readyTimer;
     const showError = () => {
-      if (!disposed && loadedTiles === 0) setPhase("error");
+      if (!disposed) setPhase("error");
     };
     loadLeaflet()
       .then((L) => {
@@ -155,18 +195,22 @@ export default function TransitMap({ route, focusLocation }) {
           },
         );
         tiles.on("tileload", () => {
-          loadedTiles += 1;
-          clearTimeout(tileTimer);
+          clearTimeout(readyTimer);
           if (!disposed) setPhase("ready");
         });
-        tiles.on("tileerror", () => {
-          failedTiles += 1;
-        });
-        tiles.on("load", () => {
-          if (failedTiles) showError();
-        });
         tiles.addTo(map);
-        tileTimer = setTimeout(showError, 12000);
+        // Mark map ready once initialized even if a tile takes longer or view bounds change immediately
+        readyTimer = setTimeout(() => {
+          if (!disposed) setPhase("ready");
+        }, 1200);
+        map.on("click", (event) => {
+          if (onMapClickRef.current && event?.latlng) {
+            onMapClickRef.current({
+              lat: Number(event.latlng.lat.toFixed(6)),
+              lng: Number(event.latlng.lng.toFixed(6)),
+            });
+          }
+        });
         mapRef.current = { L, map };
         setMapVersion((version) => version + 1);
         if (typeof ResizeObserver !== "undefined") {
@@ -180,7 +224,7 @@ export default function TransitMap({ route, focusLocation }) {
       .catch(showError);
     return () => {
       disposed = true;
-      clearTimeout(tileTimer);
+      clearTimeout(readyTimer);
       observer?.disconnect();
       if (map) {
         if (mapRef.current?.map === map) mapRef.current = null;
@@ -193,11 +237,24 @@ export default function TransitMap({ route, focusLocation }) {
     const current = mapRef.current;
     if (!current) return;
     const { L, map } = current;
-    if (!route && !focusLocation) {
+    const validVehicles = Array.isArray(vehicles)
+      ? vehicles.filter(
+          (v) =>
+            v &&
+            Number.isFinite(Number(v.lat)) &&
+            Number.isFinite(Number(v.lng)),
+        )
+      : [];
+
+    if (!route && !focusLocation && !validVehicles.length) {
       map.setView([-23.55052, -46.633308], 13, { animate: false });
       return;
     }
     const group = L.layerGroup().addTo(map);
+    validVehicles.forEach((bus) => {
+      addBusMarker(L, group, bus);
+    });
+
     if (route) {
       const path = L.polyline(route.coordinates, {
         color: "#F58D35",
@@ -212,16 +269,34 @@ export default function TransitMap({ route, focusLocation }) {
         maxZoom: 16,
         animate: false,
       });
-    } else {
+    } else if (focusLocation && validVehicles.length > 1) {
+      addPlaceMarker(L, group, "A", "Local selecionado", focusLocation);
+      const bounds = L.latLngBounds([
+        [focusLocation.lat, focusLocation.lng],
+        ...validVehicles.map((v) => [v.lat, v.lng]),
+      ]);
+      map.fitBounds(bounds, {
+        padding: [48, 48],
+        maxZoom: 16,
+        animate: false,
+      });
+    } else if (focusLocation) {
       addPlaceMarker(L, group, "A", "Local selecionado", focusLocation);
       map.setView([focusLocation.lat, focusLocation.lng], 16, {
+        animate: false,
+      });
+    } else if (validVehicles.length > 0) {
+      const bounds = L.latLngBounds(validVehicles.map((v) => [v.lat, v.lng]));
+      map.fitBounds(bounds, {
+        padding: [48, 48],
+        maxZoom: 15,
         animate: false,
       });
     }
     return () => {
       if (mapRef.current?.map === map) map.removeLayer(group);
     };
-  }, [route, focusLocation, mapVersion]);
+  }, [route, focusLocation, vehicles, mapVersion]);
 
   function retryMap() {
     setPhase("loading");

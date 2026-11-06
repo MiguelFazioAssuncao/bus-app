@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { EmptyState, Icon, Modal, PageHeading } from "../components/ui.jsx";
-import { locations, normalize } from "../lib/locations.js";
-import { readStorage, userKey, writeStorage } from "../lib/storage.js";
+import {
+  locations,
+  normalize,
+  searchAddressSuggestions,
+} from "../lib/locations.js";
+import {
+  pullPreferencesFromCloud,
+  pushPreferencesToCloud,
+  readStorage,
+  userKey,
+  writeStorage,
+} from "../lib/storage.js";
 import "../styles/search-lines.css";
 
 const validCoordinates = (place) =>
@@ -109,6 +119,8 @@ export default function Search() {
   );
   const [recents, setRecents] = useState(() => readPlaces(userKey("recents")));
   const [query, setQuery] = useState("");
+  const [livePlaces, setLivePlaces] = useState([]);
+  const [searchingLive, setSearchingLive] = useState(false);
   const [tab, setTab] = useState("all");
   const [category, setCategory] = useState("Todos");
   const [editing, setEditing] = useState(null);
@@ -118,6 +130,17 @@ export default function Search() {
   const [submitted, setSubmitted] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [storageError, setStorageError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    pullPreferencesFromCloud().then((synced) => {
+      if (!active || !synced) return;
+      setFavorites(readPlaces(favoriteKey));
+      setRecents(readPlaces(recentKey));
+    });
+    return () => {
+      active = false;
+    };
+  }, [favoriteKey, recentKey]);
   useEffect(() => {
     writeStorage(favoriteKey, favorites);
   }, [favoriteKey, favorites]);
@@ -129,10 +152,34 @@ export default function Search() {
     const timer = setTimeout(() => setFeedback(""), 4000);
     return () => clearTimeout(timer);
   }, [feedback]);
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 3 || tab !== "all") {
+      setLivePlaces([]);
+      setSearchingLive(false);
+      return;
+    }
+    const controller = new AbortController();
+    setSearchingLive(true);
+    const timer = setTimeout(async () => {
+      const results = await searchAddressSuggestions(trimmed, {
+        signal: controller.signal,
+        limit: 5,
+      });
+      if (!controller.signal.aborted) {
+        setLivePlaces(results);
+        setSearchingLive(false);
+      }
+    }, 350);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, tab]);
 
   const allPlaces = useMemo(
-    () => uniquePlaces([...locations, ...recents, ...favorites]),
-    [favorites, recents],
+    () => uniquePlaces([...locations, ...recents, ...favorites, ...livePlaces]),
+    [favorites, livePlaces, recents],
   );
   const categories = useMemo(
     () => [
@@ -145,25 +192,34 @@ export default function Search() {
     const source =
       tab === "favorites" ? favorites : tab === "recents" ? recents : allPlaces;
     const term = normalize(query.trim());
-    return source.filter(
-      (place) =>
-        (!term ||
-          normalize(
-            `${place.name} ${place.address} ${place.category}`,
-          ).includes(term)) &&
-        (category === "Todos" || place.category === category),
-    );
-  }, [allPlaces, category, favorites, query, recents, tab]);
+    return source.filter((place) => {
+      const isLiveMatch = livePlaces.some(
+        (live) => locationKey(live) === locationKey(place),
+      );
+      const textMatch =
+        !term ||
+        isLiveMatch ||
+        normalize(
+          `${place.name} ${place.address} ${place.category}`,
+        ).includes(term);
+      return (
+        textMatch &&
+        (category === "Todos" || place.category === category || isLiveMatch)
+      );
+    });
+  }, [allPlaces, category, favorites, livePlaces, query, recents, tab]);
   const errors = formErrors(form);
   const isFavorite = (place) =>
     favorites.some((favorite) => locationKey(favorite) === locationKey(place));
   const storeFavorites = (next) => {
     setFavorites(next);
     if (!writeStorage(favoriteKey, next)) setStorageError(true);
+    pushPreferencesToCloud({ favorites: next, recents });
   };
   const storeRecents = (next) => {
     setRecents(next);
     if (!writeStorage(recentKey, next)) setStorageError(true);
+    pushPreferencesToCloud({ favorites, recents: next });
   };
   const toggleFavorite = (place) => {
     const saved = isFavorite(place);
@@ -260,13 +316,16 @@ export default function Search() {
                 className="input"
                 type="search"
                 autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Busque um lugar ou endereço do catálogo"
+                placeholder="Busque qualquer rua, estação, bairro ou local em São Paulo"
               />
             </div>
             <p className="muted search-field-hint">
-              Sugestões do nosso catálogo em São Paulo e dos seus locais salvos.
+              Sugestões do nosso catálogo, dos seus locais salvos e busca de
+              endereços em São Paulo.
             </p>
           </div>
           <div
@@ -324,7 +383,9 @@ export default function Search() {
                     : "Lugares para descobrir"}
             </h2>
             <span className="muted" role="status" aria-live="polite">
-              {results.length} {results.length === 1 ? "lugar" : "lugares"}
+              {searchingLive
+                ? "Buscando endereços em SP…"
+                : `${results.length} ${results.length === 1 ? "lugar" : "lugares"}`}
             </span>
           </div>
           <div className="card search-results-card">

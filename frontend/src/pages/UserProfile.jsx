@@ -8,6 +8,12 @@ import {
   ThemeToggle,
 } from "../components/ui.jsx";
 import { api } from "../lib/api.js";
+import {
+  pullPreferencesFromCloud,
+  pushPreferencesToCloud,
+  readStorage,
+  userKey,
+} from "../lib/storage.js";
 import "../styles/auth.css";
 
 function storedSession() {
@@ -29,6 +35,19 @@ function clearSession() {
   window.dispatchEvent(new Event("busapp-session"));
 }
 
+function readPreferenceCounts() {
+  const home = readStorage(userKey("homeInfo"), null);
+  const work = readStorage(userKey("workInfo"), null);
+  const favorites = readStorage(userKey("favorites"), []);
+  const favoriteLines = readStorage(userKey("favoriteLines"), []);
+  return {
+    homeName: home?.name || null,
+    workName: work?.name || null,
+    favoritesCount: Array.isArray(favorites) ? favorites.length : 0,
+    linesCount: Array.isArray(favoriteLines) ? favoriteLines.length : 0,
+  };
+}
+
 export default function UserProfile() {
   const [token, setToken] = useState(storedSession);
   const [user, setUser] = useState(null);
@@ -36,6 +55,9 @@ export default function UserProfile() {
   const [error, setError] = useState("");
   const [expired, setExpired] = useState(false);
   const [request, setRequest] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState("");
+  const [counts, setCounts] = useState(readPreferenceCounts);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,7 +67,7 @@ export default function UserProfile() {
       headers: { Authorization: `Bearer ${token}` },
       signal: controller.signal,
     })
-      .then((data) => {
+      .then(async (data) => {
         if (controller.signal.aborted) return;
         if (!data?.user) throw new Error("Invalid profile response");
         setUser(data.user);
@@ -55,6 +77,10 @@ export default function UserProfile() {
           /* The profile still works without persistent storage. */
         }
         window.dispatchEvent(new Event("busapp-session"));
+        await pullPreferencesFromCloud();
+        if (!controller.signal.aborted) {
+          setCounts(readPreferenceCounts());
+        }
       })
       .catch((failure) => {
         if (controller.signal.aborted || failure.name === "AbortError") return;
@@ -83,6 +109,20 @@ export default function UserProfile() {
   function logout() {
     clearSession();
     navigate("/directions", { replace: true });
+  }
+
+  async function syncPreferences() {
+    setSyncing(true);
+    setSyncNotice("");
+    const pushed = await pushPreferencesToCloud({});
+    const pulled = await pullPreferencesFromCloud();
+    setCounts(readPreferenceCounts());
+    setSyncing(false);
+    setSyncNotice(
+      pushed || pulled
+        ? "Preferências sincronizadas com a nuvem."
+        : "Não foi possível sincronizar agora.",
+    );
   }
 
   const name = typeof user?.name === "string" ? user.name : "Seu perfil";
@@ -209,7 +249,9 @@ export default function UserProfile() {
             <Icon name="settings" size={22} />
           </span>
           <h2 id="profile-preferences-title">Uma experiência sua</h2>
-          <p className="muted">Escolha o tema mais confortável para navegar.</p>
+          <p className="muted">
+            Escolha o tema e acompanhe seus locais e linhas salvos.
+          </p>
           <div className="profile-theme-row">
             <div>
               <strong>Aparência</strong>
@@ -217,6 +259,52 @@ export default function UserProfile() {
             </div>
             <ThemeToggle />
           </div>
+          <div className="profile-saved-summary">
+            <div>
+              <strong>Casa</strong>
+              <span className="muted">
+                {counts.homeName || "Não configurada"}
+              </span>
+            </div>
+            <div>
+              <strong>Trabalho</strong>
+              <span className="muted">
+                {counts.workName || "Não configurado"}
+              </span>
+            </div>
+            <div>
+              <strong>Lugares favoritos</strong>
+              <span className="muted">{counts.favoritesCount}</span>
+            </div>
+            <div>
+              <strong>Linhas favoritas</strong>
+              <span className="muted">{counts.linesCount}</span>
+            </div>
+          </div>
+          {token && (
+            <div className="profile-sync-row">
+              <button
+                type="button"
+                className="button button-secondary"
+                disabled={syncing}
+                onClick={syncPreferences}
+              >
+                <Icon
+                  name="refresh"
+                  size={16}
+                  className={syncing ? "is-spinning" : ""}
+                />
+                {syncing
+                  ? "Sincronizando…"
+                  : "Sincronizar lugares com a nuvem"}
+              </button>
+              {syncNotice && (
+                <small className="muted" role="status">
+                  {syncNotice}
+                </small>
+              )}
+            </div>
+          )}
         </section>
         <section
           className="card profile-explore"
@@ -237,6 +325,10 @@ export default function UserProfile() {
             </Link>
             <Link to="/directions">
               Planejar um trajeto
+              <Icon name="arrow-up-right" size={18} />
+            </Link>
+            <Link to="/search">
+              Gerenciar meus lugares
               <Icon name="arrow-up-right" size={18} />
             </Link>
           </div>
